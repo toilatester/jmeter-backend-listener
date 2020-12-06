@@ -40,10 +40,9 @@ task copyTask(type: Copy) {
 }
 
 task releasePlugin{
-	dependsOn 'clean'
+    dependsOn 'clean'
     dependsOn 'fatJar'
     dependsOn 'copyTask'
     tasks.findByName('fatJar').mustRunAfter 'clean'
     tasks.findByName('copyTask').mustRunAfter 'fatJar'
-    
 }
