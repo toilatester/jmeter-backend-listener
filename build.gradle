@@ -13,9 +13,15 @@ jar {
 }
 
 repositories {
-    mavenCentral()
+  maven{
+  	url "https://repo.maven.apache.org/maven2"
+  	metadataSources {
+            mavenPom()
+            artifact()
+            ignoreGradleMetadataRedirection()
+        }
+  }
 }
-
 dependencies {
 	compileOnly group: 'org.apache.jmeter', name: 'ApacheJMeter_core', version: '3.1'
 	compileOnly group: 'org.apache.jmeter', name: 'ApacheJMeter_components', version: '3.1'
