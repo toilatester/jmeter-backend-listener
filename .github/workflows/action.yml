@@ -25,22 +25,21 @@ jobs:
     #   run: chmod +x gradlew
     # - name: Build with Gradle
     #   run: ./gradlew releasePlugin
-    - name: Bump version and push tag
-      id: tag_version
-      uses: mathieudutour/github-tag-action@v5.1
-      with:
-        github_token: ${{ secrets.TOKEN }}
-        release_branches: main
-        # dry_run: true
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.TOKEN }}
-      with:
-        tag_name: ${{ steps.tag_version.outputs.new_tag }}
-        release_name: Release ${{ steps.tag_version.outputs.new_tag }}
-        body: ${{ steps.tag_version.outputs.changelog }}
+    - name: Set env
+      run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+    - name: Test
+      run: |
+        echo $RELEASE_VERSION
+        echo ${{ env.RELEASE_VERSION }}
+    # - name: Create Release
+    #   id: create_release
+    #   uses: actions/create-release@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.TOKEN }}
+    #   with:
+    #     tag_name: ${{ steps.tag_version.outputs.new_tag }}
+    #     release_name: Release ${{ steps.tag_version.outputs.new_tag }}
+    #     body: ${{ steps.tag_version.outputs.changelog }}
     # - name: Upload Release Asset
     #   id: upload-release-asset 
     #   uses: actions/upload-release-asset@v1
