@@ -18,10 +18,10 @@ import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterContextService.ThreadCounts;
 import org.apache.jmeter.visualizers.backend.AbstractBackendListenerClient;
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
-import org.apache.jorphan.logging.LoggingManager;
-import org.apache.log.Logger;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.Point.Builder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import toilatester.jmeter.config.influxdb.measurement.ErrorMeasurement;
 import toilatester.jmeter.config.influxdb.measurement.RequestMeasurement;
@@ -39,7 +39,7 @@ public class JMeterInfluxDBImportFileClient extends AbstractBackendListenerClien
 	/**
 	 * Logger.
 	 */
-	private static final Logger LOGGER = LoggingManager.getLoggerForClass();
+	private static final Logger LOGGER = LoggerFactory.getLogger(JMeterInfluxDBImportFileClient.class);
 
 	/**
 	 * Parameter Keys.
@@ -101,6 +101,7 @@ public class JMeterInfluxDBImportFileClient extends AbstractBackendListenerClien
 					exportFileWriter.append(point.lineProtocol());
 					exportFileWriter.newLine();
 				} catch (IOException e) {
+					LOGGER.error(e.getMessage());
 					throw new ReportException(e);
 				}
 			}
