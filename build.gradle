@@ -55,10 +55,20 @@ task copyTask(type: Copy) {
         into './'
 }
 
+task packageDistribution(type: Zip) {
+    archiveFileName = "toilatester-jmeter-plugin.zip"
+    destinationDirectory = file("$buildDir/../")
+
+    from "$buildDir/libs"
+}
+
 task releasePlugin{
     dependsOn 'clean'
     dependsOn 'fatJar'
     dependsOn 'copyTask'
+    dependsOn 'packageDistribution'
     tasks.findByName('fatJar').mustRunAfter 'clean'
     tasks.findByName('copyTask').mustRunAfter 'fatJar'
+    tasks.findByName('packageDistribution').mustRunAfter 'fatJar'
+    
 }
