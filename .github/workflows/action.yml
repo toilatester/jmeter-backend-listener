@@ -5,18 +5,15 @@ name: Java CI with Gradle
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - v*
   create:
     tags:
       - v*
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 1.8
@@ -27,21 +24,20 @@ jobs:
       run: chmod +x gradlew
     - name: Build with Gradle
       run: ./gradlew releasePlugin
-    - name: Get release
-      id: get_release
-      uses: bruceadams/get-release@v1.2.2
+    - name: Bump version and push tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v5.1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.TOKEN }}
-    # - name: Create Release
-    #   id: create_release
-    #   uses: actions/create-release@v1
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.TOKEN }}
-    #   with:
-    #     tag_name: ${{ github.ref }}
-    #     release_name: Release ${{ github.ref }}
-    #     draft: false
-    #     prerelease: false
+      with:
+        tag_name: ${{ steps.tag_version.outputs.new_tag }}
+        release_name: Release ${{ steps.tag_version.outputs.new_tag }}
+        body: ${{ steps.tag_version.outputs.changelog }}
     - name: Upload Release Asset
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
