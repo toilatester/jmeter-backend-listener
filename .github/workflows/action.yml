@@ -4,9 +4,6 @@
 name: Release Jmeter Backend Listener Plugin
 
 on:
-  push:
-    tags:
-      - v*    
   create:
     tags:
       - v*
