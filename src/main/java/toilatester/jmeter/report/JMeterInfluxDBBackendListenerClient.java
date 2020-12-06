@@ -16,18 +16,21 @@ import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterContextService.ThreadCounts;
 import org.apache.jmeter.visualizers.backend.AbstractBackendListenerClient;
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
-import org.apache.jorphan.logging.LoggingManager;
-import org.apache.log.Logger;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.Point.Builder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import okhttp3.OkHttpClient;
-import toilatester.jmeter.report.exception.ReportException;
 import toilatester.jmeter.config.influxdb.InfluxDBConfig;
-import toilatester.jmeter.config.influxdb.measurement.*;
-
+import toilatester.jmeter.config.influxdb.measurement.ConnectMeasurement;
+import toilatester.jmeter.config.influxdb.measurement.ErrorMeasurement;
+import toilatester.jmeter.config.influxdb.measurement.RequestMeasurement;
+import toilatester.jmeter.config.influxdb.measurement.TestStartEndMeasurement;
+import toilatester.jmeter.config.influxdb.measurement.VirtualUsersMeasurement;
+import toilatester.jmeter.report.exception.ReportException;
 
 
 /**
@@ -40,7 +43,7 @@ public class JMeterInfluxDBBackendListenerClient extends AbstractBackendListener
 	/**
 	 * Logger.
 	 */
-	private static final Logger LOGGER = LoggingManager.getLoggerForClass();
+	private static final Logger LOGGER = LoggerFactory.getLogger(JMeterInfluxDBBackendListenerClient.class);
 
 	/**
 	 * Parameter Keys.
