@@ -6,6 +6,8 @@ name: Java CI with Gradle
 on:
   push:
     branches: [ main ]
+    tags:
+      - 'v*.*.*'    
   create:
     tags:
       - v*
@@ -28,6 +30,7 @@ jobs:
       uses: mathieudutour/github-tag-action@v5.1
       with:
         github_token: ${{ secrets.TOKEN }}
+        release_branches: main
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
