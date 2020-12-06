@@ -24,9 +24,9 @@ import org.influxdb.dto.Point;
 import org.influxdb.dto.Point.Builder;
 
 import okhttp3.OkHttpClient;
-import toilatester.jmeter.config.measurement.*;
 import toilatester.jmeter.report.exception.ReportException;
 import toilatester.jmeter.config.influxdb.InfluxDBConfig;
+import toilatester.jmeter.config.influxdb.measurement.*;
 
 
 

@@ -23,10 +23,10 @@ import org.apache.log.Logger;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.Point.Builder;
 
-import toilatester.jmeter.config.measurement.ErrorMeasurement;
-import toilatester.jmeter.config.measurement.RequestMeasurement;
-import toilatester.jmeter.config.measurement.TestStartEndMeasurement;
-import toilatester.jmeter.config.measurement.VirtualUsersMeasurement;
+import toilatester.jmeter.config.influxdb.measurement.ErrorMeasurement;
+import toilatester.jmeter.config.influxdb.measurement.RequestMeasurement;
+import toilatester.jmeter.config.influxdb.measurement.TestStartEndMeasurement;
+import toilatester.jmeter.config.influxdb.measurement.VirtualUsersMeasurement;
 import toilatester.jmeter.report.exception.ReportException;
 
 /**

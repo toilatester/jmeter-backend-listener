@@ -1,7 +1,7 @@
 /**
  * 
  */
-package toilatester.jmeter.config.measurement;
+package toilatester.jmeter.config.influxdb.measurement;
 
 import toilatester.jmeter.report.exception.ReportException;
 
