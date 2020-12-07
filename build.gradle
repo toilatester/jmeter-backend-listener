@@ -11,7 +11,8 @@ class JMeterRule implements ComponentMetadataRule {
 apply plugin: 'java'
 apply plugin: 'eclipse'
 
-sourceCompatibility = 1.8
+sourceCompatibility = 11
+
 version = '1.0'
 def title = 'JMeterInfluxDBListener'
 
@@ -35,8 +36,10 @@ repositories {
 dependencies {
 	compileOnly group: 'org.apache.jmeter', name: 'ApacheJMeter_core', version: '5.4'
 	compileOnly group: 'org.apache.jmeter', name: 'ApacheJMeter_components', version: '5.4'
+	compile group: 'org.apache.httpcomponents',name :'httpclient', version: '4.5.13'
 	compile group: 'org.influxdb', name: 'influxdb-java', version: '2.4'
 	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.11'
+	compile group: 'com.github.loki4j', name: 'loki-logback-appender', version: '0.4.0'
 }
 
 //create a single Jar with all dependencies
