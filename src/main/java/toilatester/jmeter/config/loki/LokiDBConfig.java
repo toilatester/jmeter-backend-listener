@@ -9,7 +9,7 @@ public class LokiDBConfig {
 	public static final int DEFAULT_PORT = 3100;
 	public static final String DEFAUlT_LOKI_API_ENDPOINT = "/loki/api/v1/push";
 	public static final int DEFAULT_BATCH_SIZE = 1000;
-	public static final long DEFAULT_BATCH_TIMEOUT_MS = 5 * 1000;
+	public static final long DEFAULT_BATCH_TIMEOUT_MS = 60 * 1000;
 	public static final long DEFAULT_CONNECTION_TIMEOUT_MS = 30 * 1000;
 	public static final long DEFAULT_REQUEST_TIMEOUT_MS = 5 * 1000;
 

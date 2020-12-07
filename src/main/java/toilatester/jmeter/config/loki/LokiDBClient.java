@@ -19,12 +19,12 @@ import com.github.loki4j.logback.LokiThreadFactory;
 
 public class LokiDBClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LokiDBClient.class);
-
+	private static final String DEFAULT_CONTENT_TYPE = "application/json";
+	
 	private HttpClient client;
 	private HttpRequest.Builder requestBuilder;
 	private LokiDBConfig config;
 	private ExecutorService internalHttpThreadPool;
-	private static final String DEFAULT_CONTENT_TYPE = "application/json";
 	private ExecutorService httpThreadPool;
 
 	public static final class LokiResponse {
@@ -43,8 +43,8 @@ public class LokiDBClient {
 	}
 
 	public void createLokiClient() {
-		httpThreadPool = Executors.newFixedThreadPool(5, new LokiThreadFactory("loki-http-sender"));
-		internalHttpThreadPool = new ThreadPoolExecutor(5, Integer.MAX_VALUE, this.config.getLokiBatchTimeout(),
+		httpThreadPool = Executors.newFixedThreadPool(2, new LokiThreadFactory("loki-http-sender"));
+		internalHttpThreadPool = new ThreadPoolExecutor(2, Integer.MAX_VALUE, this.config.getLokiBatchTimeout(),
 				TimeUnit.MILLISECONDS, // expire unused threads after 15 batch intervals
 				new SynchronousQueue<Runnable>(), new LokiThreadFactory("loki-java-http-internal"));
 
@@ -57,22 +57,16 @@ public class LokiDBClient {
 
 	public void stopLokiClient() {
 		internalHttpThreadPool.shutdown();
+		httpThreadPool.shutdown();
 	}
 
-	public CompletableFuture<LokiResponse> sendAsync(String batch) {
+	public CompletableFuture<LokiResponse> sendAsync(byte[] batch) {
 		// Java HttpClient natively supports async API
 		// But we have to use its sync API to preserve the ordering of batches
-		if (batch == null || batch.length() == 0)
-			LOGGER.info("Empty request body ??????");
-		LOGGER.info(batch.toString());
 		return CompletableFuture.supplyAsync(() -> {
 			try {
-				var request = requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofString(batch)).build();
-
+				var request = requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofByteArray(batch)).build();
 				var response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-				LOGGER.info(String.format("loki response body %s", response.body()));
-				LOGGER.info(String.format("loki response code %d", response.statusCode()));
 				return new LokiResponse(response.statusCode(), response.body());
 			} catch (Exception e) {
 				LOGGER.info(String.format("Exception %s", e.getMessage()));
