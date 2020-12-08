@@ -8,7 +8,7 @@ public class LokiLog {
 	private static final int ONE_MS_IN_NANOSECONDS = 1000000;
 	List<String> logObject;
 	long unixEpochNano;
-	String logMessage;
+	String logMessage = "";
 
 	public LokiLog(String logMessage) {
 		this.unixEpochNano = System.currentTimeMillis() * ONE_MS_IN_NANOSECONDS;

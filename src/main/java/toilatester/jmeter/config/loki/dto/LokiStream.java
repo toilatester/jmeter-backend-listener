@@ -1,7 +1,9 @@
 package toilatester.jmeter.config.loki.dto;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class LokiStream {
 
@@ -12,8 +14,8 @@ public class LokiStream {
 		return stream;
 	}
 
-	public void setStream(Map<String, String> stream) {
-		this.stream = stream;
+	public void setStream(Map<String, String> lokiLabels) {
+		this.stream = normalizeLabels(lokiLabels);
 	}
 
 	public List<List<String>> getValues() {
@@ -22,5 +24,15 @@ public class LokiStream {
 
 	public void setValues(List<List<String>> values) {
 		this.values = values;
+	}
+
+	private Map<String, String> normalizeLabels(Map<String, String> lokiLabels) {
+		Map<String, String> normalizeLabels = new HashMap<String, String>();
+		for (Entry<String, String> labelSet : lokiLabels.entrySet()) {
+			String rawLabel = labelSet.getKey();
+			String lokiLabel = rawLabel.strip().trim().replaceAll("(-)|(\\s)|(\\+)|(\\*)", "");
+			normalizeLabels.put(lokiLabel, labelSet.getValue());
+		}
+		return normalizeLabels;
 	}
 }

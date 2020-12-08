@@ -2,6 +2,7 @@ package toilatester.jmeter.report;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -119,11 +120,7 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 	private void setUpLokiClient(BackendListenerContext context) {
 		LOGGER.info("================  Set up setUpLokiClient ...!! ======================");
 		lokiDBConfig = new LokiDBConfig(context);
-		lokiClient = new LokiDBClient(lokiDBConfig,
-				Executors.newFixedThreadPool(1, new LokiClientThreadFactory("jmeter-loki-log")),
-				new ThreadPoolExecutor(0, Integer.MAX_VALUE, lokiDBConfig.getLokiBatchTimeout() * 10,
-						TimeUnit.MILLISECONDS, // expire unused threads after 10 batch intervals
-						new SynchronousQueue<Runnable>(), new LokiClientThreadFactory("jmeter-loki-java-http")));
+		lokiClient = new LokiDBClient(lokiDBConfig, createlokiLogThreadPool(), createHttpClientThreadPool());
 		if (lokiClient != null)
 			LOGGER.info("================  Set up setUpLokiClient completed ...!! ======================");
 		schedulerSession = scheduler.scheduleAtFixedRate(
@@ -162,6 +159,16 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 			lokiClient.sendAsync(sampleLogHeader.getBytes()).thenAccept(r -> {
 			});
 		}
+	}
+
+	private ExecutorService createHttpClientThreadPool() {
+		return new ThreadPoolExecutor(0, Integer.MAX_VALUE, lokiDBConfig.getLokiBatchTimeout() * 10,
+				TimeUnit.MILLISECONDS, // expire unused threads after 10 batch intervals
+				new SynchronousQueue<Runnable>(), new LokiClientThreadFactory("jmeter-loki-java-http"));
+	}
+
+	private ExecutorService createlokiLogThreadPool() {
+		return Executors.newFixedThreadPool(1, new LokiClientThreadFactory("jmeter-loki-log"));
 	}
 
 }
