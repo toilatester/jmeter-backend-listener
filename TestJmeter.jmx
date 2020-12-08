@@ -16,7 +16,7 @@
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <intProp name="LoopController.loops">-1</intProp>
+          <stringProp name="LoopController.loops">10</stringProp>
         </elementProp>
         <stringProp name="ThreadGroup.num_threads">5</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
@@ -79,12 +79,12 @@
               </elementProp>
               <elementProp name="lokiHost" elementType="Argument">
                 <stringProp name="Argument.name">lokiHost</stringProp>
-                <stringProp name="Argument.value">localhost</stringProp>
+                <stringProp name="Argument.value">192.168.10.69</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="lokiPort" elementType="Argument">
                 <stringProp name="Argument.name">lokiPort</stringProp>
-                <stringProp name="Argument.value">3100</stringProp>
+                <stringProp name="Argument.value">30842</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="lokiApiEndPoint" elementType="Argument">
@@ -95,6 +95,11 @@
               <elementProp name="lokiBatchSize" elementType="Argument">
                 <stringProp name="Argument.name">lokiBatchSize</stringProp>
                 <stringProp name="Argument.value">1000</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="lokiLabels" elementType="Argument">
+                <stringProp name="Argument.name">lokiLabels</stringProp>
+                <stringProp name="Argument.value">jmeter=toilatester,external_label=loki-client</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="lokiBatchTimeout" elementType="Argument">

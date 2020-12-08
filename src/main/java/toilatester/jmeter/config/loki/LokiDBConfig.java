@@ -1,5 +1,9 @@
 package toilatester.jmeter.config.loki;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
 
@@ -8,6 +12,7 @@ public class LokiDBConfig {
 	public static final String DEFAULT_HOST = "localhost";
 	public static final int DEFAULT_PORT = 3100;
 	public static final String DEFAUlT_LOKI_API_ENDPOINT = "/loki/api/v1/push";
+	public static final String DEFAUlT_LOKI_EXTERNAL_LABEL = "jmeter=toilatester,external_label=loki-clien";
 	public static final int DEFAULT_BATCH_SIZE = 1000;
 	public static final long DEFAULT_BATCH_TIMEOUT_MS = 60 * 1000;
 	public static final long DEFAULT_CONNECTION_TIMEOUT_MS = 30 * 1000;
@@ -21,16 +26,17 @@ public class LokiDBConfig {
 	public static final String KEY_LOKI_BATCH_TIMEOUT_MS = "lokiBatchTimeout";
 	public static final String KEY_CONNECTION_TIMEOUT_MS = "lokiConnectionTimeout";
 	public static final String KEY_REQUEST_TIMEOUT_MS = "lokiRequestTimeout";
-
+	public static final String KEY_LOKI_EXTERNAL_LABELS = "lokiLabels";
+	private static final String DEFAULT_DELIMITER_CHAR = ",";
 	private String lokiProtocol;
 	private String lokiHost;
 	private int lokiPort;
 	private String lokiApi;
 	private int lokibBatchSize;
 	private long lokiBatchTimeout;
-
 	private long lokiConnectiontimeout;
 	private long lokiRequestTimeout;
+	private Map<String, String> lokiExternalLabels = new LinkedHashMap<String, String>();
 
 	public String getLokiProtocol() {
 		return lokiProtocol;
@@ -134,6 +140,19 @@ public class LokiDBConfig {
 		setLokiRequestTimeout(lokiRequestTimeout);
 		setLokibBatchSize(lokiBatchSize);
 		setLokiBatchTimeout(lokiBatchTimeout);
+		setLokiExternalLabels(this.parsingExternalLabels(context.getParameter(KEY_LOKI_EXTERNAL_LABELS)));
+	}
+
+	private Map<String, String> parsingExternalLabels(String rawExternalLabel) {
+		Map<String, String> externalLokiLabels = new HashMap<String, String>();
+		if (StringUtils.isEmpty(rawExternalLabel))
+			return externalLokiLabels;
+		String[] listlabels = rawExternalLabel.split(DEFAULT_DELIMITER_CHAR);
+		for (String label : listlabels) {
+			String[] labelValue = label.split("=");
+			externalLokiLabels.put(labelValue[0], labelValue[1]);
+		}
+		return externalLokiLabels;
 	}
 
 	public String getLokiUrl() {
@@ -146,6 +165,14 @@ public class LokiDBConfig {
 
 	public void setLokiApi(String lokiApi) {
 		this.lokiApi = lokiApi;
+	}
+
+	public Map<String, String> getLokiExternalLabels() {
+		return this.lokiExternalLabels;
+	}
+
+	public void setLokiExternalLabels(Map<String, String> lokiExternalLabels) {
+		this.lokiExternalLabels = lokiExternalLabels;
 	}
 
 }

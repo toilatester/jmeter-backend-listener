@@ -7,57 +7,51 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.loki4j.logback.LokiThreadFactory;
+import toilatester.jmeter.config.loki.dto.LokiResponse;
 
 public class LokiDBClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LokiDBClient.class);
 	private static final String DEFAULT_CONTENT_TYPE = "application/json";
-	
+
 	private HttpClient client;
 	private HttpRequest.Builder requestBuilder;
 	private LokiDBConfig config;
-	private ExecutorService internalHttpThreadPool;
-	private ExecutorService httpThreadPool;
+	private ExecutorService sendLogThreadPool;
+	private ExecutorService httpClientThreadPool;
 
-	public static final class LokiResponse {
-		public int status;
-		public String body;
-
-		public LokiResponse(int status, String body) {
-			this.status = status;
-			this.body = body;
-		}
-	}
-
-	public LokiDBClient(LokiDBConfig config) {
+	public LokiDBClient(LokiDBConfig config, ExecutorService sendLogThreadPool, ExecutorService httpClientThreadPool) {
 		this.config = config;
+		this.sendLogThreadPool = sendLogThreadPool;
+		this.httpClientThreadPool = httpClientThreadPool;
 		this.createLokiClient();
 	}
 
 	public void createLokiClient() {
-		httpThreadPool = Executors.newFixedThreadPool(2, new LokiThreadFactory("loki-http-sender"));
-		internalHttpThreadPool = new ThreadPoolExecutor(2, Integer.MAX_VALUE, this.config.getLokiBatchTimeout(),
-				TimeUnit.MILLISECONDS, // expire unused threads after 15 batch intervals
-				new SynchronousQueue<Runnable>(), new LokiThreadFactory("loki-java-http-internal"));
-
 		client = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(this.config.getLokiConnectiontimeout()))
-				.executor(internalHttpThreadPool).build();
+				.executor(this.httpClientThreadPool).build();
 
 		requestBuilder = HttpRequest.newBuilder().timeout(Duration.ofMillis(this.config.getLokiRequestTimeout()))
 				.uri(URI.create(this.config.getLokiUrl())).header("Content-Type", DEFAULT_CONTENT_TYPE);
 	}
 
 	public void stopLokiClient() {
-		internalHttpThreadPool.shutdown();
-		httpThreadPool.shutdown();
+		this.httpClientThreadPool.shutdown();
+		this.sendLogThreadPool.shutdown();
+		try {
+			Boolean shutdownNow = !sendLogThreadPool.awaitTermination(3, TimeUnit.SECONDS)
+					|| !httpClientThreadPool.awaitTermination(3, TimeUnit.SECONDS);
+			if (shutdownNow) {
+				httpClientThreadPool.shutdownNow();
+				sendLogThreadPool.shutdown();
+			}
+		} catch (InterruptedException e) {
+			httpClientThreadPool.shutdownNow();
+		}
 	}
 
 	public CompletableFuture<LokiResponse> sendAsync(byte[] batch) {
@@ -69,10 +63,10 @@ public class LokiDBClient {
 				var response = client.send(request, HttpResponse.BodyHandlers.ofString());
 				return new LokiResponse(response.statusCode(), response.body());
 			} catch (Exception e) {
-				LOGGER.info(String.format("Exception %s", e.getMessage()));
+				LOGGER.info(String.format("Error while sending batch to Loki %s", e.getMessage()));
 				throw new RuntimeException("Error while sending batch to Loki", e);
 			}
-		}, httpThreadPool);
+		}, this.sendLogThreadPool);
 	}
 
 }
