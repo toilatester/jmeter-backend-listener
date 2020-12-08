@@ -17,7 +17,7 @@ public class Main {
 				new LokiLog("Sample log 2").getLogObject(), new LokiLog("Sample log 3").getLogObject()));
 		lokiStream.setStream(new HashMap<String, String>() {
 			{
-				put("jmeter_plugin", "toilatester");
+				put("jmeter plugin-123_345", "toilatester");
 				put("external_label", "minhhoang");
 			}
 		});

@@ -20,6 +20,9 @@ import org.slf4j.LoggerFactory;
 import toilatester.jmeter.config.loki.LokiClientThreadFactory;
 import toilatester.jmeter.config.loki.LokiDBClient;
 import toilatester.jmeter.config.loki.LokiDBConfig;
+import toilatester.jmeter.config.loki.dto.LokiLog;
+import toilatester.jmeter.config.loki.dto.LokiStream;
+import toilatester.jmeter.config.loki.dto.LokiStreams;
 
 public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerClient implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(JMeterLokiDBBackendListenerClient.class);
@@ -98,6 +101,8 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_PORT, Integer.toString(LokiDBConfig.DEFAULT_PORT));
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_API_ENDPOINT, LokiDBConfig.DEFAUlT_LOKI_API_ENDPOINT);
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_BATCH_SIZE, Integer.toString(LokiDBConfig.DEFAULT_BATCH_SIZE));
+		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_INTERVAL_TIME,
+				Integer.toString(LokiDBConfig.DEFAULT_BATCH_INTERVAL_TIME));
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_EXTERNAL_LABELS, LokiDBConfig.DEFAUlT_LOKI_EXTERNAL_LABEL);
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_BATCH_TIMEOUT_MS,
 				Long.toString(LokiDBConfig.DEFAULT_BATCH_TIMEOUT_MS));
@@ -123,9 +128,8 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 		lokiClient = new LokiDBClient(lokiDBConfig, createlokiLogThreadPool(), createHttpClientThreadPool());
 		if (lokiClient != null)
 			LOGGER.info("================  Set up setUpLokiClient completed ...!! ======================");
-		schedulerSession = scheduler.scheduleAtFixedRate(
-				() -> LOGGER.info("================  Schedule Task To Send Loki Log ======================"), 100,
-				lokiDBConfig.getLokiBatchTimeout(), TimeUnit.MILLISECONDS);
+		schedulerSession = scheduler.scheduleAtFixedRate(dispatchLogToLoki(), 100,
+				lokiDBConfig.getLokiBatchIntervalTime(), TimeUnit.MILLISECONDS);
 	}
 
 	private void collectAllSampleResult(List<SampleResult> allSampleResults, List<SampleResult> sampleResults) {
@@ -159,6 +163,25 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 			lokiClient.sendAsync(sampleLogHeader.getBytes()).thenAccept(r -> {
 			});
 		}
+	}
+
+	private Runnable dispatchLogToLoki() {
+		return () -> LOGGER.info("================  Schedule Task To Send Loki Log ======================");
+	}
+
+	private LokiStreams generateLokiStreamsObject(List<SampleResult> allSampleResults) {
+		LokiStreams lokiStreams = new LokiStreams();
+		return lokiStreams;
+	}
+
+	private LokiStream generateLokiStream() {
+		LokiStream lokiStream = new LokiStream();
+		return lokiStream;
+	}
+
+	private LokiLog generateLokiLog() {
+		LokiLog lokiLog = new LokiLog();
+		return lokiLog;
 	}
 
 	private ExecutorService createHttpClientThreadPool() {

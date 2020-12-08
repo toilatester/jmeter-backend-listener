@@ -14,6 +14,7 @@ public class LokiDBConfig {
 	public static final String DEFAUlT_LOKI_API_ENDPOINT = "/loki/api/v1/push";
 	public static final String DEFAUlT_LOKI_EXTERNAL_LABEL = "jmeter=toilatester,external_label=loki-clien";
 	public static final int DEFAULT_BATCH_SIZE = 1000;
+	public static final int DEFAULT_BATCH_INTERVAL_TIME = 1000;
 	public static final long DEFAULT_BATCH_TIMEOUT_MS = 60 * 1000;
 	public static final long DEFAULT_CONNECTION_TIMEOUT_MS = 30 * 1000;
 	public static final long DEFAULT_REQUEST_TIMEOUT_MS = 5 * 1000;
@@ -23,6 +24,7 @@ public class LokiDBConfig {
 	public static final String KEY_LOKI_DB_PORT = "lokiPort";
 	public static final String KEY_LOKI_DB_API_ENDPOINT = "lokiApiEndPoint";
 	public static final String KEY_LOKI_DB_BATCH_SIZE = "lokiBatchSize";
+	public static final String KEY_LOKI_DB_INTERVAL_TIME = "lokiBatchIntervalTime";
 	public static final String KEY_LOKI_BATCH_TIMEOUT_MS = "lokiBatchTimeout";
 	public static final String KEY_CONNECTION_TIMEOUT_MS = "lokiConnectionTimeout";
 	public static final String KEY_REQUEST_TIMEOUT_MS = "lokiRequestTimeout";
@@ -33,6 +35,7 @@ public class LokiDBConfig {
 	private int lokiPort;
 	private String lokiApi;
 	private int lokibBatchSize;
+	private long lokiBatchIntervalTime;
 	private long lokiBatchTimeout;
 	private long lokiConnectiontimeout;
 	private long lokiRequestTimeout;
@@ -135,10 +138,12 @@ public class LokiDBConfig {
 		long lokiConnectionTimeout = context.getLongParameter(KEY_CONNECTION_TIMEOUT_MS);
 		long lokiRequestTimeout = context.getLongParameter(KEY_REQUEST_TIMEOUT_MS);
 		int lokiBatchSize = context.getIntParameter(KEY_LOKI_DB_BATCH_SIZE);
+		long lokiBatchIntervalTime = context.getIntParameter(KEY_LOKI_DB_INTERVAL_TIME);
 		long lokiBatchTimeout = context.getLongParameter(KEY_LOKI_BATCH_TIMEOUT_MS);
 		setLokiConnectiontimeout(lokiConnectionTimeout);
 		setLokiRequestTimeout(lokiRequestTimeout);
 		setLokibBatchSize(lokiBatchSize);
+		setLokiBatchIntervalTime(lokiBatchIntervalTime);
 		setLokiBatchTimeout(lokiBatchTimeout);
 		setLokiExternalLabels(this.parsingExternalLabels(context.getParameter(KEY_LOKI_EXTERNAL_LABELS)));
 	}
@@ -173,6 +178,14 @@ public class LokiDBConfig {
 
 	public void setLokiExternalLabels(Map<String, String> lokiExternalLabels) {
 		this.lokiExternalLabels = lokiExternalLabels;
+	}
+
+	public long getLokiBatchIntervalTime() {
+		return lokiBatchIntervalTime;
+	}
+
+	public void setLokiBatchIntervalTime(long lokiBatchIntervalTime) {
+		this.lokiBatchIntervalTime = lokiBatchIntervalTime;
 	}
 
 }

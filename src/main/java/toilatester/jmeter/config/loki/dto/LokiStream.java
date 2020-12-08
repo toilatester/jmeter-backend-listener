@@ -30,7 +30,7 @@ public class LokiStream {
 		Map<String, String> normalizeLabels = new HashMap<String, String>();
 		for (Entry<String, String> labelSet : lokiLabels.entrySet()) {
 			String rawLabel = labelSet.getKey();
-			String lokiLabel = rawLabel.strip().trim().replaceAll("(-)|(\\s)|(\\+)|(\\*)", "");
+			String lokiLabel = rawLabel.strip().trim().replaceAll("(\\W)", "");
 			normalizeLabels.put(lokiLabel, labelSet.getValue());
 		}
 		return normalizeLabels;
