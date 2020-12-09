@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import toilatester.jmeter.config.loki.LokiClientThreadFactory;
 
 public class Main {
+	private static int generateLogCount = 0;
+	private static int sendLogCount = 0;
 	private static String LOCAL_URL = "http://localhost:8080/loki/api/v1/push";
 	private static String LOKI_URL = "http://192.168.10.69:30842/loki/api/v1/push";
 	private static BlockingQueue<LokiStreams> queue;
@@ -50,7 +52,7 @@ public class Main {
 			LokiStreams lokiStreams = new LokiStreams();
 			LokiStream lokiStream = new LokiStream();
 			lokiStream.setStream(labels);
-			int totalRandomLog = new Random().nextInt(500);
+			int totalRandomLog = new Random().nextInt(5000);
 			System.err.println(String.format("Total Generate Log %d", totalRandomLog));
 			List<List<String>> listLog = new ArrayList<>();
 			for (int i = 0; i < totalRandomLog; i++) {
@@ -60,6 +62,27 @@ public class Main {
 			lokiStream.setValues(listLog);
 			lokiStreams.setStreams(Arrays.asList(lokiStream));
 			this.queue.add(lokiStreams);
+		}
+
+		public void addSeperateLog() {
+			Map<String, String> labels = new HashMap<>();
+			labels.put("jmeter_plugin", "toilatester");
+			labels.put("external_label", "minhhoang");
+			int totalRandomLog = new Random().nextInt(5000);
+			generateLogCount += totalRandomLog;
+			System.err.println(String.format("Total Generate Log %d", totalRandomLog));
+			for (int i = 0; i < totalRandomLog; i++) {
+				LokiStreams lokiStreams = new LokiStreams();
+				LokiStream lokiStream = new LokiStream();
+				lokiStream.setStream(labels);
+				List<List<String>> listLog = new ArrayList<>();
+				listLog.add(new LokiLog("Sample log " + i + " " + Long.toString(System.currentTimeMillis() * 1000000))
+						.getLogObject());
+				lokiStream.setValues(listLog);
+				lokiStreams.setStreams(Arrays.asList(lokiStream));
+				this.queue.add(lokiStreams);
+			}
+
 		}
 
 	}
@@ -96,9 +119,11 @@ public class Main {
 			ObjectMapper mapper = new ObjectMapper();
 			System.err.println(String.format("Total log to send %d", queue.size()));
 			int queueLength = this.queue.size();
-			if (queueLength > 0) {
+			while (queueLength > 0) {
+				
 				try {
 					String requestJSON = mapper.writeValueAsString(this.queue.poll());
+					sendLogCount += 1;
 					var request = this.requestBuilder.copy()
 							.POST(HttpRequest.BodyPublishers.ofByteArray(requestJSON.getBytes())).build();
 					var response = this.client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
@@ -111,7 +136,6 @@ public class Main {
 				}
 				queueLength = this.queue.size();
 			}
-			System.out.println(String.format("Completed send all log  %d", queue.size()));
 		}
 
 	}
@@ -122,6 +146,9 @@ public class Main {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		System.err.println("===============================");
+		System.err.println("===============================");
+		System.err.println("===============================");
 		Instant start = Instant.now();
 		Instant stop = Instant.now();
 		Duration limit = Duration.ofSeconds(30);
@@ -129,8 +156,9 @@ public class Main {
 		queue = new LinkedBlockingDeque<LokiStreams>();
 		AddLokiLog addLog = new AddLokiLog(queue);
 		SendLokiLog sendLog = new SendLokiLog(queue);
-		addSchedulerSession = addScheduler.scheduleAtFixedRate(() -> addLog.addLog(), 500, 1000, TimeUnit.MILLISECONDS);
-		sendSchedulerSession = sendScheduler.scheduleAtFixedRate(() -> sendLog.sendLog(), 500, 500,
+		addSchedulerSession = addScheduler.scheduleAtFixedRate(() -> addLog.addSeperateLog(), 500, 1000,
+				TimeUnit.MILLISECONDS);
+		sendSchedulerSession = sendScheduler.scheduleAtFixedRate(() -> sendLog.sendLog(), 500, 2000,
 				TimeUnit.MILLISECONDS);
 		while ((duration.compareTo(limit) <= 0)) {
 			duration = Duration.between(start, Instant.now());
@@ -146,6 +174,8 @@ public class Main {
 		sendLog.shutDownHttpPool();
 		sendSchedulerSession.cancel(true);
 		sendScheduler.shutdown();
+		System.err.println(String.format("Total generate log %d", generateLogCount));
+		System.err.println(String.format("Total send log %d", sendLogCount));
 	}
 
 }
