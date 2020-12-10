@@ -91,6 +91,7 @@ public class LokiDBClient {
 	public CompletableFuture<LokiResponse> sendAsync(byte[] batch) {
 		// Java HttpClient natively supports async API
 		// But we have to use its sync API to preserve the ordering of batches
+		// This will avoid having issue 'entry out of order' for stream
 		return CompletableFuture.supplyAsync(() -> {
 			try {
 				var request = requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofByteArray(batch)).build();
