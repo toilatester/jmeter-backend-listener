@@ -117,7 +117,7 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 	@Override
 	public void teardownTest(BackendListenerContext context) throws Exception {
 		LOGGER.info("=============== Tear down JMeter Test Plan ...!! =================");
-		lokiClient.stopLokiClient();
+		lokiClient.stopLokiClient(15, 15);
 		schedulerSession.cancel(true);
 		scheduler.shutdown();
 	}

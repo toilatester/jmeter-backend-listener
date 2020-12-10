@@ -31,26 +31,60 @@ public class LokiDBClient {
 		this.createLokiClient();
 	}
 
-	public void createLokiClient() {
-		client = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(this.config.getLokiConnectiontimeout()))
-				.executor(this.httpClientThreadPool).build();
-
-		requestBuilder = HttpRequest.newBuilder().timeout(Duration.ofMillis(this.config.getLokiRequestTimeout()))
-				.uri(URI.create(this.config.getLokiUrl())).header("Content-Type", DEFAULT_CONTENT_TYPE);
+	public LokiDBClient(ExecutorService sendLogThreadPool, ExecutorService httpClientThreadPool) {
+		this.sendLogThreadPool = sendLogThreadPool;
+		this.httpClientThreadPool = httpClientThreadPool;
 	}
 
-	public void stopLokiClient() {
+	public void createLokiClient(String lokiUrl, long connectionTimeout, long requestTimeout) {
+		client = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(connectionTimeout))
+				.executor(this.httpClientThreadPool).build();
+
+		requestBuilder = HttpRequest.newBuilder().timeout(Duration.ofMillis(requestTimeout)).uri(URI.create(lokiUrl))
+				.header("Content-Type", DEFAULT_CONTENT_TYPE);
+	}
+
+	private void createLokiClient() {
+		this.createLokiClient(this.config.getLokiUrl(), this.config.getLokiConnectiontimeout(),
+				this.config.getLokiRequestTimeout());
+	}
+
+	public void stopLokiClient(long clientThreadPoolTimeout, long sendLogThreadPoolTimeout) {
 		this.httpClientThreadPool.shutdown();
+		this.waitForClientThreadPoolCompleted(clientThreadPoolTimeout);
 		this.sendLogThreadPool.shutdown();
+		this.waitForSendLogThreadPoolCompleted(sendLogThreadPoolTimeout);
+	}
+
+	private void waitForClientThreadPoolCompleted(long timeout) {
 		try {
-			Boolean shutdownNow = !sendLogThreadPool.awaitTermination(3, TimeUnit.SECONDS)
-					|| !httpClientThreadPool.awaitTermination(3, TimeUnit.SECONDS);
-			if (shutdownNow) {
-				httpClientThreadPool.shutdownNow();
-				sendLogThreadPool.shutdown();
+			if (!this.httpClientThreadPool.awaitTermination(timeout, TimeUnit.SECONDS)) {
+				this.httpClientThreadPool.shutdownNow();
+				if (!this.httpClientThreadPool.awaitTermination(timeout, TimeUnit.SECONDS)) {
+					LOGGER.info(String.format("Error while wait for all thread pool completed"));
+				}
 			}
+
 		} catch (InterruptedException e) {
+			LOGGER.info(String.format("Error while wait for all thread pool completed: %s", e.getMessage()));
 			httpClientThreadPool.shutdownNow();
+			Thread.currentThread().interrupt();
+		}
+	}
+
+	private void waitForSendLogThreadPoolCompleted(long timeout) {
+		try {
+			if (!this.sendLogThreadPool.awaitTermination(timeout, TimeUnit.SECONDS)) {
+				this.sendLogThreadPool.shutdownNow();
+				if (!this.sendLogThreadPool.awaitTermination(timeout, TimeUnit.SECONDS)) {
+					LOGGER.info(String.format("Error while wait for all thread pool completed"));
+				}
+			}
+
+		} catch (InterruptedException e) {
+			LOGGER.info(String.format("Error while wait for all thread pool completed: %s", e.getMessage()));
+			sendLogThreadPool.shutdownNow();
+			Thread.currentThread().interrupt();
 		}
 	}
 
