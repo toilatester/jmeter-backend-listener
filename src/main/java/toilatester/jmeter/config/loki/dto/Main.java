@@ -27,7 +27,6 @@ public class Main {
 	private static LokiDBClient lokiClient;
 	private static int generateLogCount = 0;
 	private static int sendLogCount = 0;
-	private static int completedSendLog = 0;
 	private static int totalLokiStream = 0;
 	private static final int MAX_STREAM_PER_REQUEST = 256;
 	private static String LOCAL_URL = "http://localhost:3100/loki/api/v1/push";
@@ -52,7 +51,7 @@ public class Main {
 			labels.put("external_label", "minhhoang");
 			LokiStreams lokiStreams = new LokiStreams();
 			LokiStream lokiStream = new LokiStream();
-			int totalRandomLog = new Random().nextInt(50000);
+			int totalRandomLog = new Random().nextInt(5000);
 			generateLogCount += totalRandomLog;
 			System.err.println(String.format("Total Generate Log %d", totalRandomLog));
 			List<List<String>> listLog = new ArrayList<>();
@@ -71,6 +70,7 @@ public class Main {
 			}
 			lokiStreams.setStreams(lokiStreamList);
 			this.queue.add(lokiStreams);
+			sendLogCount += 1;
 			totalLokiStream += lokiStreamList.size();
 		}
 	}
@@ -82,7 +82,7 @@ public class Main {
 	 */
 
 	private static ExecutorService createHttpClientThreadPool() {
-		return new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5000 * 10, TimeUnit.MILLISECONDS, // expire unused threads
+		return new ThreadPoolExecutor(5, Integer.MAX_VALUE, 5000 * 10, TimeUnit.MILLISECONDS, // expire unused threads
 																								// after 10 batch
 																								// intervals
 				new SynchronousQueue<Runnable>(), new LokiClientThreadFactory("jmeter-loki-java-http"));
@@ -100,9 +100,8 @@ public class Main {
 
 			try {
 				String requestJSON = mapper.writeValueAsString(queue.poll());
-				sendLogCount += 1;
 				lokiClient.sendAsync(requestJSON.getBytes()).thenAccept(response -> {
-					completedSendLog++;
+					sendLogCount--;
 					if (response.status != 204) {
 						System.err.println(response.status);
 						System.err.println(response.body);
@@ -143,8 +142,9 @@ public class Main {
 			remainLog = queue.size();
 		}
 		System.err.println("Completed send all log!!!!!!!!!!!!!!!!!!!!!!!!");
-		while (sendLogCount != completedSendLog) {
-			System.out.println(String.format("Wait to complete send %d of %d ", completedSendLog, sendLogCount));
+		System.err.println("Remain log to send " + sendLogCount);
+		while (sendLogCount > 0) {
+			System.out.println(String.format("Wait to complete send reamin %d ", sendLogCount));
 			try {
 				Thread.sleep(2000);
 			} catch (InterruptedException e) {
@@ -158,9 +158,7 @@ public class Main {
 		} catch (InterruptedException e) {
 		}
 		System.err.println(String.format("Total generate log %d", generateLogCount));
-		System.err.println(String.format("Total send log %d", sendLogCount));
 		System.err.println(String.format("Total loki stream log %d", totalLokiStream));
-		System.err.println(String.format("Total send log completed %d", completedSendLog));
 	}
 
 }
