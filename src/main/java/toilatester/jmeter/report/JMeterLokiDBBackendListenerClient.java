@@ -1,7 +1,10 @@
 package toilatester.jmeter.report;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -12,10 +15,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.samplers.SampleResult;
+import org.apache.jmeter.threads.JMeterContextService;
+import org.apache.jmeter.threads.JMeterContextService.ThreadCounts;
 import org.apache.jmeter.visualizers.backend.AbstractBackendListenerClient;
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
 
 import toilatester.jmeter.config.loki.LokiClientThreadFactory;
 import toilatester.jmeter.config.loki.LokiDBClient;
@@ -37,8 +44,25 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 
 	private static final int ONE_MS_IN_NANOSECONDS = 1000000;
 
-	private ScheduledExecutorService scheduler;
-	private ScheduledFuture<?> schedulerSession;
+	private ScheduledExecutorService sendLogDataScheduler;
+
+	private ScheduledFuture<?> sendLogDataSchedulerSession;
+
+	private ScheduledExecutorService addThreadMetricDataScheduler;
+
+	private ScheduledFuture<?> addThreadMetricDataSchedulerSession;
+
+	private BlockingQueue<LokiStreams> lokiStreamsQueue;
+
+	private volatile int lokiStreamsCurrentQueueSize = 0;
+
+	@SuppressWarnings("serial")
+	private volatile Map<String, String> defaultLokiLabels = new HashMap<>() {
+		{
+			put("toilatester", "loki-plugin");
+			put("jmeter_plugin", "loki-log");
+		}
+	};
 
 	@Override
 	public void handleSampleResults(List<SampleResult> sampleResults, BackendListenerContext context) {
@@ -47,50 +71,48 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 		List<SampleResult> allSampleResults = new ArrayList<>();
 		collectAllSampleResult(allSampleResults, sampleResults);
 		synchronized (LOCK) {
-			storeSampleResultToDB(allSampleResults);
+			storeSampleResultsToDB(allSampleResults);
 		}
 	}
 
 	@Override
 	public void setupTest(BackendListenerContext context) throws Exception {
-		LOGGER.info("================  Set up JMeter Test Plan ...!! ======================");
-		scheduler = Executors.newScheduledThreadPool(1, new LokiClientThreadFactory("loki-scheduler"));
+		sendLogDataScheduler = Executors.newScheduledThreadPool(1,
+				new LokiClientThreadFactory("send-loki-log-scheduler"));
+		addThreadMetricDataScheduler = Executors.newScheduledThreadPool(1,
+				new LokiClientThreadFactory("add-thread-metric-log-scheduler"));
 		setUpLokiClient(context);
-		String sampleLogBody = String.format(
-				"{\"streams\":[{\"stream\":{\"jmeter_loki_plugin\":\"set-up-test\"},\"values\":[[\"%d\",\"This is sample log plugin when set up test\"]]}]}",
-				System.currentTimeMillis() * ONE_MS_IN_NANOSECONDS);
-		lokiDBConfig.getLokiExternalLabels()
-				.forEach((k, v) -> LOGGER.info(String.format("Key: %s \\nValue: %s", k, v)));
-		LOGGER.info(sampleLogBody);
-		lokiClient.sendAsync(sampleLogBody.getBytes()).whenComplete((r, e) -> {
-			if (e != null) {
-				LOGGER.info(e.getMessage());
-			} else {
-				LOGGER.info(String.format("loki response body %s", r.body));
-				LOGGER.info(String.format("loki response code %d", r.status));
-			}
-		});
-
+		addThreadMetricDataSchedulerSession = addThreadMetricDataScheduler.scheduleAtFixedRate(this, 1, 1,
+				TimeUnit.SECONDS);
 	}
 
+	private void generateSetupTestLog() {
+	};
+
 	public void run() {
-		LOGGER.info("============ Run Jmeter Test Plan ...!! ===================");
-		try {
-			String sampleLogBody = String.format(
-					"{\"streams\":[{\"stream\":{\"jmeter_loki_plugin\":\"run-test\"},\"values\":[[\"%d\",\"This is sample log plugin when running test\"]]}]}",
-					System.currentTimeMillis() * ONE_MS_IN_NANOSECONDS);
-			LOGGER.info(sampleLogBody);
-			lokiClient.sendAsync(sampleLogBody.getBytes()).whenComplete((r, e) -> {
-				if (e != null) {
-					LOGGER.error(e.getMessage());
-				} else {
-					LOGGER.info(String.format("loki response body %s", r.body));
-					LOGGER.info(String.format("loki response code %d", r.status));
-				}
-			});
-		} catch (Exception e) {
-			LOGGER.error("Failed writing to loki", e);
-		}
+		ThreadCounts tc = JMeterContextService.getThreadCounts();
+		String currentVirutalUsersLog = String.format(
+				"minActiveThreads: %d \nmeanActiveThreads: %d \nmaxActiveThreads: %d \nstartedThreads: %d \nfinishedThreads: %d",
+				getUserMetrics().getMinActiveThreads(), getUserMetrics().getMeanActiveThreads(),
+				getUserMetrics().getMaxActiveThreads(), tc.startedThreads, tc.finishedThreads);
+		generateThreadMetricLog(currentVirutalUsersLog);
+	}
+
+	private void generateThreadMetricLog(String log) {
+		Map<String, String> labels = new HashMap<>();
+		labels.put("jmeter_plugin", "toilatester");
+		labels.put("external_label", "minhhoang");
+		LokiStreams lokiStreams = new LokiStreams();
+		List<LokiStream> lokiStreamList = new ArrayList<>();
+		List<List<String>> listLog = new ArrayList<>();
+		LokiStream lokiStream = new LokiStream();
+		lokiStream.setStream(labels);
+		listLog.add(new LokiLog(log).getLogObject());
+		lokiStream.setValues(listLog);
+		lokiStreamList.add(lokiStream);
+		lokiStreams.setStreams(lokiStreamList);
+		this.lokiStreamsQueue.add(lokiStreams);
+		this.lokiStreamsCurrentQueueSize += 1;
 	}
 
 	@Override
@@ -116,20 +138,29 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 
 	@Override
 	public void teardownTest(BackendListenerContext context) throws Exception {
-		LOGGER.info("=============== Tear down JMeter Test Plan ...!! =================");
+		addThreadMetricDataSchedulerSession.cancel(true);
+		addThreadMetricDataScheduler.shutdown();
+		while (this.lokiStreamsCurrentQueueSize > 0) {
+			System.out.println(String.format("Wait to complete send reamin %d ", this.lokiStreamsCurrentQueueSize));
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {
+			}
+		}
+		sendLogDataSchedulerSession.cancel(true);
+		sendLogDataScheduler.shutdown();
 		lokiClient.stopLokiClient(15, 15);
-		schedulerSession.cancel(true);
-		scheduler.shutdown();
 	}
 
+	private void generateTearDownTestLog() {
+	};
+
 	private void setUpLokiClient(BackendListenerContext context) {
-		LOGGER.info("================  Set up setUpLokiClient ...!! ======================");
 		lokiDBConfig = new LokiDBConfig(context);
 		lokiClient = new LokiDBClient(lokiDBConfig, createlokiLogThreadPool(), createHttpClientThreadPool());
-		if (lokiClient != null)
-			LOGGER.info("================  Set up setUpLokiClient completed ...!! ======================");
-		schedulerSession = scheduler.scheduleAtFixedRate(dispatchLogToLoki(), 100,
+		sendLogDataSchedulerSession = sendLogDataScheduler.scheduleAtFixedRate(dispatchLogToLoki(), 500,
 				lokiDBConfig.getLokiBatchIntervalTime(), TimeUnit.MILLISECONDS);
+		this.defaultLokiLabels.putAll(lokiDBConfig.getLokiExternalLabels());
 	}
 
 	private void collectAllSampleResult(List<SampleResult> allSampleResults, List<SampleResult> sampleResults) {
@@ -149,39 +180,34 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 		}
 	}
 
-	private void storeSampleResultToDB(List<SampleResult> allSampleResults) {
-		for (SampleResult result : allSampleResults) {
-			String sampleLogResponseBody = String.format(
-					"{\"streams\":[{\"stream\":{\"jmeter_loki_plugin\":\"response-body\"},\"values\":[[\"%d\",\"%s\"]]}]}",
-					System.currentTimeMillis() * ONE_MS_IN_NANOSECONDS, result.getResponseDataAsString());
-			String sampleLogHeader = String.format(
-					"{\"streams\":[{\"stream\":{\"jmeter_loki_plugin\":\"response-header\"},\"values\":[[\"%d\",\"%s\"]]}]}",
-					System.currentTimeMillis() * ONE_MS_IN_NANOSECONDS, result.getResponseHeaders());
-			lokiClient.sendAsync(sampleLogResponseBody.getBytes()).thenAccept(r -> {
-
-			});
-			lokiClient.sendAsync(sampleLogHeader.getBytes()).thenAccept(r -> {
-			});
-		}
+	private void storeSampleResultsToDB(List<SampleResult> allSampleResults) {
+		generateSampleResultsToLokiStreamsObject(allSampleResults);
 	}
 
 	private Runnable dispatchLogToLoki() {
 		return () -> LOGGER.info("================  Schedule Task To Send Loki Log ======================");
 	}
 
-	private LokiStreams generateLokiStreamsObject(List<SampleResult> allSampleResults) {
+	private void generateSampleResultsToLokiStreamsObject(List<SampleResult> allSampleResults) {
+		Map<String, String> labels = new HashMap<>();
+		labels.put("jmeter_plugin", "toilatester");
+		labels.put("external_label", "minhhoang");
 		LokiStreams lokiStreams = new LokiStreams();
-		return lokiStreams;
-	}
-
-	private LokiStream generateLokiStream() {
-		LokiStream lokiStream = new LokiStream();
-		return lokiStream;
-	}
-
-	private LokiLog generateLokiLog() {
-		LokiLog lokiLog = new LokiLog();
-		return lokiLog;
+		List<LokiStream> lokiStreamList = new ArrayList<>();
+		for (List<SampleResult> partition : Lists.partition(allSampleResults, this.lokiDBConfig.getLokibBatchSize())) {
+			List<List<String>> listLog = new ArrayList<>();
+			LokiStream lokiStream = new LokiStream();
+			lokiStream.setStream(labels);
+			for (SampleResult result : partition) {
+				listLog.add(new LokiLog("Sample log " + partition.indexOf(result) + " "
+						+ Long.toString(System.currentTimeMillis() * 1000000)).getLogObject());
+			}
+			lokiStream.setValues(listLog);
+			lokiStreamList.add(lokiStream);
+		}
+		lokiStreams.setStreams(lokiStreamList);
+		this.lokiStreamsQueue.add(lokiStreams);
+		this.lokiStreamsCurrentQueueSize += 1;
 	}
 
 	private ExecutorService createHttpClientThreadPool() {

@@ -1,7 +1,6 @@
 package toilatester.jmeter.config.loki;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -12,8 +11,8 @@ public class LokiDBConfig {
 	public static final String DEFAULT_HOST = "localhost";
 	public static final int DEFAULT_PORT = 3100;
 	public static final String DEFAUlT_LOKI_API_ENDPOINT = "/loki/api/v1/push";
-	public static final String DEFAUlT_LOKI_EXTERNAL_LABEL = "jmeter=toilatester,external_label=loki-clien";
-	public static final int DEFAULT_BATCH_SIZE = 1000;
+	public static final String DEFAUlT_LOKI_EXTERNAL_LABEL = "jmeter=toilatester,external_label=loki-client";
+	public static final int DEFAULT_BATCH_SIZE = 256;
 	public static final int DEFAULT_BATCH_INTERVAL_TIME = 1000;
 	public static final long DEFAULT_BATCH_TIMEOUT_MS = 60 * 1000;
 	public static final long DEFAULT_CONNECTION_TIMEOUT_MS = 30 * 1000;
@@ -39,7 +38,7 @@ public class LokiDBConfig {
 	private long lokiBatchTimeout;
 	private long lokiConnectiontimeout;
 	private long lokiRequestTimeout;
-	private Map<String, String> lokiExternalLabels = new LinkedHashMap<String, String>();
+	private Map<String, String> lokiExternalLabels = new HashMap<String, String>();
 
 	public String getLokiProtocol() {
 		return lokiProtocol;

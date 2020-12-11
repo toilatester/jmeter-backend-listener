@@ -202,6 +202,7 @@ public class JMeterInfluxDBBackendListenerClient extends AbstractBackendListener
 
 	@Override
 	public void setupTest(BackendListenerContext context) throws Exception {
+		super.setupTest(context);
 		testName = context.getParameter(KEY_TEST_NAME, "Test");
 		randomNumberGenerator = new Random();
 		nodeName = context.getParameter(KEY_NODE_NAME, "Test-Node");
