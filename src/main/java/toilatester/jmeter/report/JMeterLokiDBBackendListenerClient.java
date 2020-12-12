@@ -179,11 +179,12 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 			if (!isTransactionSampleName)
 				sampleResult.setSampleLabel("Request " + sampleResult.getSampleLabel());
 			allSampleResults.add(sampleResult);
+			getUserMetrics().add(sampleResult);
 			for (SampleResult subResult : sampleResult.getSubResults()) {
 				subResult.setSampleLabel("Sub Request " + subResult.getSampleLabel());
 				allSampleResults.add(subResult);
+				getUserMetrics().add(sampleResult);
 			}
-
 		}
 	}
 
@@ -199,6 +200,11 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 			try {
 				String requestJSON = mapper.writeValueAsString(this.lokiStreamsQueue.poll());
 				this.lokiClient.sendAsync(requestJSON.getBytes()).thenAccept(res -> {
+					if (res.status != 204 || res.status != 200) {
+						System.err.println(
+								String.format("Error in send loki log to DB with status code [%d] and error [%s]",
+										res.status, res.body));
+					}
 					System.err.println(res.status);
 					System.err.println(res.body);
 					this.lokiStreamsCurrentQueueSize--;
@@ -219,7 +225,6 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 			LokiStream lokiStream = new LokiStream();
 			lokiStream.setStream(defaultLokiLabels);
 			for (SampleResult result : partition) {
-				getUserMetrics().add(result);
 				listLog.add(new LokiLog(generateSampleLog(result)).getLogObject());
 			}
 			lokiStream.setValues(listLog);

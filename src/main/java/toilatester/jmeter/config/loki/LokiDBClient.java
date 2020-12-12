@@ -103,9 +103,9 @@ public class LokiDBClient {
 				return new LokiResponse(response.statusCode(), response.body());
 			} catch (Exception e) {
 				// TODO return invalid status code to handle in listener
-				System.err.println("Error send loki log: "+e.getMessage());
+				System.err.println("Error send loki log: " + e.getMessage());
 				LOGGER.info(String.format("Error while sending batch to Loki %s", e.getMessage()));
-				throw new RuntimeException("Error while sending batch to Loki", e);
+				return new LokiResponse(400, e.getMessage());
 			}
 		}, this.sendLogThreadPool);
 	}
