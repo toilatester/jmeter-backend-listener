@@ -20,6 +20,7 @@ import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.threads.JMeterContextService.ThreadCounts;
 import org.apache.jmeter.visualizers.backend.AbstractBackendListenerClient;
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
+import org.apache.jmeter.visualizers.backend.SamplerMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +61,21 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 	private ObjectMapper mapper = new ObjectMapper();
 
 	@SuppressWarnings("serial")
-	private volatile Map<String, String> defaultLokiLabels = new HashMap<>() {
+	private Map<String, String> lokiReponseHeaderLabels = new HashMap<>() {
+		{
+			put("jmeter_data", "response-header");
+		}
+	};
+
+	@SuppressWarnings("serial")
+	private Map<String, String> lokiReponseBodyLabels = new HashMap<>() {
+		{
+			put("jmeter_data", "response-body");
+		}
+	};
+
+	@SuppressWarnings("serial")
+	private Map<String, String> defaultLokiLabels = new HashMap<>() {
 		{
 			put("toilatester", "loki-plugin");
 			put("jmeter_plugin", "loki-log");
@@ -98,11 +113,10 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 	public void run() {
 		System.out.println("================  Schedule Task To Add Thread Metric To Loki Log ======================");
 		ThreadCounts tc = JMeterContextService.getThreadCounts();
-		String currentVirutalUsersLog = String.format(
-				"minActiveThreads: %d \nmeanActiveThreads: %d \nmaxActiveThreads: %d \nstartedThreads: %d \nfinishedThreads: %d",
+		generateThreadMetricLog(String.format(
+				"[INFO] minActiveThreads: %d \nmeanActiveThreads: %d \nmaxActiveThreads: %d \nstartedThreads: %d \nfinishedThreads: %d",
 				getUserMetrics().getMinActiveThreads(), getUserMetrics().getMeanActiveThreads(),
-				getUserMetrics().getMaxActiveThreads(), tc.startedThreads, tc.finishedThreads);
-		generateThreadMetricLog(currentVirutalUsersLog);
+				getUserMetrics().getMaxActiveThreads(), tc.startedThreads, tc.finishedThreads));
 	}
 
 	@Override
@@ -169,6 +183,8 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 		sendLogDataSchedulerSession = sendLogDataScheduler.scheduleAtFixedRate(dispatchLogToLoki(), 500, 1000,
 				TimeUnit.MILLISECONDS);
 		this.defaultLokiLabels.putAll(lokiDBConfig.getLokiExternalLabels());
+		this.lokiReponseBodyLabels.putAll(defaultLokiLabels);
+		this.lokiReponseHeaderLabels.putAll(defaultLokiLabels);
 	}
 
 	private void collectAllSampleResult(List<SampleResult> allSampleResults, List<SampleResult> sampleResults) {
@@ -199,8 +215,9 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 			System.out.println("================  Schedule Task To Send Loki Log ======================");
 			try {
 				String requestJSON = mapper.writeValueAsString(this.lokiStreamsQueue.poll());
+				System.err.println(requestJSON);
 				this.lokiClient.sendAsync(requestJSON.getBytes()).thenAccept(res -> {
-					if (res.status != 204 || res.status != 200) {
+					if (res.status != 204 && res.status != 200) {
 						System.err.println(
 								String.format("Error in send loki log to DB with status code [%d] and error [%s]",
 										res.status, res.body));
@@ -221,24 +238,42 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 		LokiStreams lokiStreams = new LokiStreams();
 		List<LokiStream> lokiStreamList = new ArrayList<>();
 		for (List<SampleResult> partition : Lists.partition(allSampleResults, this.lokiDBConfig.getLokibBatchSize())) {
-			List<List<String>> listLog = new ArrayList<>();
-			LokiStream lokiStream = new LokiStream();
-			lokiStream.setStream(defaultLokiLabels);
+			List<List<String>> listLogResponseBody = new ArrayList<>();
+			List<List<String>> listLogResponseHeader = new ArrayList<>();
+			LokiStream lokiStreamResponseBody = new LokiStream();
+			LokiStream lokiStreamResponseHeader = new LokiStream();
+			lokiStreamResponseHeader.setStream(lokiReponseHeaderLabels);
+			lokiStreamResponseBody.setStream(lokiReponseBodyLabels);
 			for (SampleResult result : partition) {
-				getMetricsPerSampler().get(result.getSampleLabel()).add(result);
-				listLog.add(new LokiLog(generateSampleLog(result)).getLogObject());
+				try {
+					Map<String, SamplerMetric> metricsPerSampler = getMetricsPerSampler();
+					metricsPerSampler.putIfAbsent(result.getSampleLabel(), new SamplerMetric());
+					metricsPerSampler.get(result.getSampleLabel()).add(result);
+				} catch (NullPointerException e) {
+					System.err.println(result.getSampleLabel());
+					System.err.println("Add sample result error " + e.getMessage());
+				}
+				listLogResponseBody.add(new LokiLog(generateResponseBodySampleLog(result)).getLogObject());
+				listLogResponseHeader.add(new LokiLog(generateResponseHeaderSampleLog(result)).getLogObject());
 			}
-			lokiStream.setValues(listLog);
-			lokiStreamList.add(lokiStream);
+			lokiStreamResponseHeader.setValues(listLogResponseHeader);
+			lokiStreamResponseBody.setValues(listLogResponseBody);
+			lokiStreamList.add(lokiStreamResponseHeader);
+			lokiStreamList.add(lokiStreamResponseBody);
 		}
 		lokiStreams.setStreams(lokiStreamList);
 		this.lokiStreamsQueue.add(lokiStreams);
 		this.lokiStreamsCurrentQueueSize += 1;
 	}
 
-	private String generateSampleLog(SampleResult result) {
-		return String.format("Sample [%s]: \nHas status code: [%s] \nHas response body: \n%s", result.getSampleLabel(),
-				result.getResponseCode(), result.getResponseDataAsString());
+	private String generateResponseBodySampleLog(SampleResult result) {
+		return String.format("[INFO] Sample [%s]: \nHas status code: [%s] \nHas response body: \n%s",
+				result.getSampleLabel(), result.getResponseCode(), result.getResponseDataAsString());
+	}
+
+	private String generateResponseHeaderSampleLog(SampleResult result) {
+		return String.format("[INFO] Sample [%s]: \nHas response header: \nHas duration: %d",
+				result.getResponseHeaders(), (result.getEndTime() - result.getStartTime()) / 1000);
 	}
 
 	private ExecutorService createHttpClientThreadPool() {
