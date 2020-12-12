@@ -45,70 +45,40 @@ public class JMeterInfluxDBBackendListenerClient extends AbstractBackendListener
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(JMeterInfluxDBBackendListenerClient.class);
 
-	/**
-	 * Parameter Keys.
-	 */
 	private static final String KEY_USE_REGEX_FOR_SAMPLER_LIST = "useRegexForSamplerList";
+	
 	private static final String KEY_TEST_NAME = "testName";
+	
 	private static final String KEY_NODE_NAME = "nodeName";
+	
 	private static final String KEY_SAMPLERS_LIST = "samplersList";
+	
 	private static final String KEY_RECORD_SUB_SAMPLES = "recordSubSamples";
 
-	/**
-	 * Constants.
-	 */
 	private static final String SEPARATOR = ";";
+	
 	private static final int ONE_MS_IN_NANOSECONDS = 1000000;
+	
 	private static final Object LOCK = new Object();
 
-	/**
-	 * Scheduler for periodic metric aggregation.
-	 */
 	private ScheduledExecutorService scheduler;
 
-	/**
-	 * Name of the test.
-	 */
 	private String testName;
 
-	/**
-	 * Name of the name
-	 */
 	private String nodeName;
 
-	/**
-	 * Regex if samplers are defined through regular expression.
-	 */
 	private String regexForSamplerList;
 
-	/**
-	 * Set of samplers to record.
-	 */
 	private Set<String> samplersToFilter;
 
-	/**
-	 * InfluxDB configuration.
-	 */
 	InfluxDBConfig influxDBConfig;
 
-	/**
-	 * influxDB client.
-	 */
 	private InfluxDB influxDB;
 
-	/**
-	 * Random number generator
-	 */
 	private Random randomNumberGenerator;
 
-	/**
-	 * Indicates whether to record Subsamples
-	 */
 	private boolean recordSubSamples;
 
-	/**
-	 * Processes sampler results.
-	 */
 
 	@Override
 	public void handleSampleResults(List<SampleResult> sampleResults, BackendListenerContext context) {
@@ -232,6 +202,7 @@ public class JMeterInfluxDBBackendListenerClient extends AbstractBackendListener
 
 	@Override
 	public void setupTest(BackendListenerContext context) throws Exception {
+		super.setupTest(context);
 		testName = context.getParameter(KEY_TEST_NAME, "Test");
 		randomNumberGenerator = new Random();
 		nodeName = context.getParameter(KEY_NODE_NAME, "Test-Node");

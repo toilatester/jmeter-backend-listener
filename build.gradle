@@ -11,8 +11,9 @@ class JMeterRule implements ComponentMetadataRule {
 apply plugin: 'java'
 apply plugin: 'eclipse'
 
-sourceCompatibility = 1.8
-version = '1.0'
+sourceCompatibility = 11
+
+def version = '1.0'
 def title = 'JMeterInfluxDBListener'
 
 jar {
@@ -37,6 +38,7 @@ dependencies {
 	compileOnly group: 'org.apache.jmeter', name: 'ApacheJMeter_components', version: '5.4'
 	compile group: 'org.influxdb', name: 'influxdb-java', version: '2.4'
 	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.11'
+	compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.0'
 }
 
 //create a single Jar with all dependencies
@@ -51,8 +53,17 @@ task fatJar(type: Jar) {
 }
 
 task copyTask(type: Copy) {
-        from 'build/libs/.'
-        into './'
+    from 'build/libs/.'
+    into './'
+}
+
+task copyTaskToJmeterDebug(type: Copy){
+ 	def jmeterPath = System.env.JMETER_HOME
+ 	def fileLibDebugPath = jmeterPath + "/lib/ext/" + "jmeter-backend-listener-plugin-" + version + ".jar"
+ 	boolean fileSuccessfullyDeleted = new File(fileLibDebugPath).delete() 
+ 	println "Clean old lib successfully: " + fileSuccessfullyDeleted
+ 	from 'build/libs/.'
+    into jmeterPath + "/lib/ext/"
 }
 
 task packageDistribution(type: Zip) {
@@ -61,6 +72,7 @@ task packageDistribution(type: Zip) {
 
     from "$buildDir/libs"
 }
+
 
 task releasePlugin{
     dependsOn 'clean'
@@ -71,4 +83,12 @@ task releasePlugin{
     tasks.findByName('copyTask').mustRunAfter 'fatJar'
     tasks.findByName('packageDistribution').mustRunAfter 'fatJar'
     
+}
+
+task releaseHotDebug{
+    dependsOn 'clean'
+    dependsOn 'fatJar'
+    dependsOn 'copyTaskToJmeterDebug'
+    tasks.findByName('fatJar').mustRunAfter 'clean'
+    tasks.findByName('copyTaskToJmeterDebug').mustRunAfter 'fatJar'
 }
