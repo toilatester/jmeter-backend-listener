@@ -92,12 +92,18 @@ public class LokiDBClient {
 		// Java HttpClient natively supports async API
 		// But we have to use its sync API to preserve the ordering of batches
 		// This will avoid having issue 'entry out of order' for stream
+		System.err.println("Send loki log print in loki client");
 		return CompletableFuture.supplyAsync(() -> {
 			try {
+				System.err.println("Start send loki log print in loki client");
 				var request = requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofByteArray(batch)).build();
 				var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+				System.err.println(response.statusCode());
+				System.err.println(response.body());
 				return new LokiResponse(response.statusCode(), response.body());
 			} catch (Exception e) {
+				// TODO return invalid status code to handle in listener
+				System.err.println("Error send loki log: "+e.getMessage());
 				LOGGER.info(String.format("Error while sending batch to Loki %s", e.getMessage()));
 				throw new RuntimeException("Error while sending batch to Loki", e);
 			}

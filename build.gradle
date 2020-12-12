@@ -13,7 +13,7 @@ apply plugin: 'eclipse'
 
 sourceCompatibility = 11
 
-version = '1.0'
+def version = '1.0'
 def title = 'JMeterInfluxDBListener'
 
 jar {
@@ -53,8 +53,17 @@ task fatJar(type: Jar) {
 }
 
 task copyTask(type: Copy) {
-        from 'build/libs/.'
-        into './'
+    from 'build/libs/.'
+    into './'
+}
+
+task copyTaskToJmeterDebug(type: Copy){
+ 	def jmeterPath = System.env.JMETER_HOME
+ 	def fileLibDebugPath = jmeterPath + "/lib/ext/" + "jmeter-backend-listener-plugin-" + version + ".jar"
+ 	boolean fileSuccessfullyDeleted = new File(fileLibDebugPath).delete() 
+ 	println "Clean old lib successfully: " + fileSuccessfullyDeleted
+ 	from 'build/libs/.'
+    into jmeterPath + "/lib/ext/"
 }
 
 task packageDistribution(type: Zip) {
@@ -63,6 +72,7 @@ task packageDistribution(type: Zip) {
 
     from "$buildDir/libs"
 }
+
 
 task releasePlugin{
     dependsOn 'clean'
@@ -73,4 +83,12 @@ task releasePlugin{
     tasks.findByName('copyTask').mustRunAfter 'fatJar'
     tasks.findByName('packageDistribution').mustRunAfter 'fatJar'
     
+}
+
+task releaseHotDebug{
+    dependsOn 'clean'
+    dependsOn 'fatJar'
+    dependsOn 'copyTaskToJmeterDebug'
+    tasks.findByName('fatJar').mustRunAfter 'clean'
+    tasks.findByName('copyTaskToJmeterDebug').mustRunAfter 'fatJar'
 }
