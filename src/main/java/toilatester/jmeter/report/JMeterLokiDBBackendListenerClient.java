@@ -225,6 +225,7 @@ public class JMeterLokiDBBackendListenerClient extends AbstractBackendListenerCl
 			LokiStream lokiStream = new LokiStream();
 			lokiStream.setStream(defaultLokiLabels);
 			for (SampleResult result : partition) {
+				getMetricsPerSampler().get(result.getSampleLabel()).add(result);
 				listLog.add(new LokiLog(generateSampleLog(result)).getLogObject());
 			}
 			lokiStream.setValues(listLog);
