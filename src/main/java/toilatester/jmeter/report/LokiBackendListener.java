@@ -1,6 +1,7 @@
 package toilatester.jmeter.report;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,8 @@ import toilatester.jmeter.config.loki.dto.LokiStreams;
 
 public class LokiBackendListener extends AbstractBackendListenerClient implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LokiBackendListener.class);
+
+	private static final Object LOCK = new Object();
 
 	private LokiDBClient lokiClient;
 
@@ -93,7 +96,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 			setUpLokiClient(context);
 			sendLogDataSchedulerSession = sendLogDataScheduler.scheduleAtFixedRate(dispatchLogToLoki(), 500,
 					this.lokiDBConfig.getLokiSendBatchIntervalTime(), TimeUnit.MILLISECONDS);
-			addThreadMetricDataSchedulerSession = addThreadMetricDataScheduler.scheduleAtFixedRate(this, 1, 1,
+			addThreadMetricDataSchedulerSession = addThreadMetricDataScheduler.scheduleAtFixedRate(this, 10, 1,
 					TimeUnit.SECONDS);
 		} catch (Exception e) {
 			LOGGER.error(String.format("Error in set up test %s", e.getMessage()));
@@ -118,10 +121,12 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 
 	@Override
 	public void handleSampleResults(List<SampleResult> sampleResults, BackendListenerContext context) {
-		LOGGER.info("Store sampler results to loki database");
-		List<SampleResult> allSampleResults = new ArrayList<>();
-		collectAllSampleResult(allSampleResults, sampleResults);
-		storeSampleResultsToDB(allSampleResults);
+		synchronized (LOCK) {
+			LOGGER.info("Store sampler results to loki database");
+			List<SampleResult> allSampleResults = new ArrayList<>();
+			collectAllSampleResult(allSampleResults, sampleResults);
+			storeSampleResultsToDB(allSampleResults);
+		}
 	}
 
 	private void collectAllSampleResult(List<SampleResult> allSampleResults, List<SampleResult> sampleResults) {
@@ -152,6 +157,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 			this.storeLokiLogsAllPartitions(lokiStreams, lokiStreamList, partition);
 		}
 		lokiStreams.setStreams(lokiStreamList);
+		LOGGER.debug("============= Add to queue ===================");
 		this.lokiStreamsQueue.add(lokiStreams);
 		this.lokiStreamsCurrentQueueSize += 1;
 	}
@@ -184,9 +190,11 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 					String.format("Error in add sampler [%s] metrics. %s", result.getSampleLabel(), e.getMessage()));
 		}
 		listLogResponseBody
-				.add(new LokiLog(LogLevel.INFO.value(), generateResponseBodySampleLog(result)).getLogObject());
+				.add(new LokiLog(result.getErrorCount() == 0 ? LogLevel.INFO.value() : LogLevel.ERROR.value(),
+						generateResponseBodySampleLog(result)).getLogObject());
 		listLogResponseHeader
-				.add(new LokiLog(LogLevel.INFO.value(), generateResponseHeaderSampleLog(result)).getLogObject());
+				.add(new LokiLog(result.getErrorCount() == 0 ? LogLevel.INFO.value() : LogLevel.ERROR.value(),
+						generateResponseHeaderSampleLog(result)).getLogObject());
 	}
 
 	@Override
@@ -247,6 +255,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 			String requestJSON = mapper.writeValueAsString(lokiStreams);
 			return this.lokiClient.sendAsync(requestJSON.getBytes());
 		} catch (JsonProcessingException e) {
+			LOGGER.error("Error JSON Convert: " + e.getMessage());
 			return this.lokiClient
 					.sendAsync(String.format("[Error] Can't generate test metrics %s", e.getMessage()).getBytes());
 		}
@@ -317,9 +326,14 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	private Runnable dispatchLogToLoki() {
 		return () -> {
 			try {
-				String requestJSON = mapper.writeValueAsString(this.lokiStreamsQueue.poll());
+				LokiStreams lokiStreams = this.lokiStreamsQueue.poll();
+				if (lokiStreams == null)
+					return;
+				String requestJSON = mapper.writeValueAsString(lokiStreams);
+				LOGGER.debug("Loki Request Payload: " + requestJSON);
 				this.lokiClient.sendAsync(requestJSON.getBytes()).thenAccept(this.lokiClientResponseHandler);
 			} catch (JsonProcessingException e) {
+				LOGGER.error("Error JSON Convert: " + e.getMessage());
 				this.lokiClient
 						.sendAsync(String.format("[Error] Can't generate test metrics %s", e.getMessage()).getBytes())
 						.thenAccept(this.lokiClientResponseHandler);
@@ -328,8 +342,16 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	}
 
 	private String generateResponseBodySampleLog(SampleResult result) {
-		return String.format("Sampler [%s]: \nStatus Code: [%s] \nResponse Body: \n%s", result.getSampleLabel(),
-				result.getResponseCode(), result.getResponseDataAsString());
+		StringBuilder assertionResultMsg = new StringBuilder();
+		Arrays.asList(result.getAssertionResults()).forEach(assertionResult -> {
+			assertionResultMsg.append(
+					String.format("Assertion Name [%s] - Is Error [%b] - Is Failure [%b] \nFailure Message: %s\n",
+							assertionResult.getName(), assertionResult.isError(), assertionResult.isFailure(),
+							assertionResult.getFailureMessage()));
+		});
+		return String.format("Sampler [%s] \nStatus Code: [%s] \nAssertions Result: \n%s \nResponse Body: \n%s \n",
+				result.getSampleLabel(), result.getResponseCode(), assertionResultMsg.toString(),
+				result.getResponseDataAsString());
 	}
 
 	private String generateResponseHeaderSampleLog(SampleResult result) {
@@ -348,6 +370,9 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	}
 
 	private Consumer<LokiResponse> lokiClientResponseHandler = (response) -> {
+		LOGGER.debug("============= Send Log To DB ===================");
+		LOGGER.debug(Integer.toString(response.status));
+		LOGGER.debug(response.body);
 		if (response.status != 204 && response.status != 200) {
 			LOGGER.error(String.format("Error in send loki log to DB with status code [%d] and error [%s]",
 					response.status, response.body));
