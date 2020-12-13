@@ -35,11 +35,11 @@ import toilatester.jmeter.report.exception.ReportException;
  * @author MinhHoang
  *
  */
-public class JMeterInfluxDBImportFileClient extends AbstractBackendListenerClient implements Runnable {
+public class InfluxImportFileClient extends AbstractBackendListenerClient implements Runnable {
 	/**
 	 * Logger.
 	 */
-	private static final Logger LOGGER = LoggerFactory.getLogger(JMeterInfluxDBImportFileClient.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InfluxImportFileClient.class);
 
 	/**
 	 * Parameter Keys.
