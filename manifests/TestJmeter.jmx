@@ -18,7 +18,7 @@
           <boolProp name="LoopController.continue_forever">false</boolProp>
           <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.num_threads">3000</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <boolProp name="ThreadGroup.scheduler">false</boolProp>
         <stringProp name="ThreadGroup.duration">10</stringProp>
@@ -30,11 +30,11 @@
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
             <collectionProp name="Arguments.arguments"/>
           </elementProp>
-          <stringProp name="HTTPSampler.domain">genk.vn</stringProp>
-          <stringProp name="HTTPSampler.port">443</stringProp>
-          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.domain">localhost</stringProp>
+          <stringProp name="HTTPSampler.port">8080</stringProp>
+          <stringProp name="HTTPSampler.protocol">http</stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
-          <stringProp name="HTTPSampler.path">/</stringProp>
+          <stringProp name="HTTPSampler.path">/login</stringProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
           <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
@@ -152,7 +152,7 @@
         </hashTree>
       </hashTree>
       <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
-        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <boolProp name="ResultCollector.error_logging">true</boolProp>
         <objProp>
           <name>saveConfig</name>
           <value class="SampleSaveConfiguration">
@@ -213,17 +213,22 @@
             </elementProp>
             <elementProp name="lokiBatchSize" elementType="Argument">
               <stringProp name="Argument.name">lokiBatchSize</stringProp>
-              <stringProp name="Argument.value">256</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="lokiSendBatchIntervalTime" elementType="Argument">
-              <stringProp name="Argument.name">lokiSendBatchIntervalTime</stringProp>
-              <stringProp name="Argument.value">200</stringProp>
+              <stringProp name="Argument.value">50</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
             <elementProp name="lokiLabels" elementType="Argument">
               <stringProp name="Argument.name">lokiLabels</stringProp>
               <stringProp name="Argument.value">jmeter_plugin=loki-log</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="lokiSendBatchIntervalTime" elementType="Argument">
+              <stringProp name="Argument.name">lokiSendBatchIntervalTime</stringProp>
+              <stringProp name="Argument.value">1000</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="lokiLogResponseBodyFailedSamplerOnly" elementType="Argument">
+              <stringProp name="Argument.name">lokiLogResponseBodyFailedSamplerOnly</stringProp>
+              <stringProp name="Argument.value">true</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
             <elementProp name="lokiBatchTimeout" elementType="Argument">
@@ -241,11 +246,6 @@
               <stringProp name="Argument.value">5000</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
-            <elementProp name="lokiLogResponseBodyFailedSamplerOnly" elementType="Argument">
-              <stringProp name="Argument.name">lokiLogResponseBodyFailedSamplerOnly</stringProp>
-              <stringProp name="Argument.value">false</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
             <elementProp name="lokiBatchIntervalTime" elementType="Argument">
               <stringProp name="Argument.name">lokiBatchIntervalTime</stringProp>
               <stringProp name="Argument.value">1000</stringProp>
@@ -254,7 +254,6 @@
           </collectionProp>
         </elementProp>
         <stringProp name="classname">toilatester.jmeter.report.LokiBackendListener</stringProp>
-        <stringProp name="QUEUE_SIZE">50000</stringProp>
       </BackendListener>
       <hashTree/>
       <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">
