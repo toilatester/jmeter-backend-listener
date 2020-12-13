@@ -386,40 +386,37 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 					break;
 				listLog.add(lokiLog.getLogObject());
 			}
-			try {
-				if (listLog.size() == 0)
-					return;
-				LOGGER.info("===== Total Logs Adding " + listLog.size());
-				totalLogConvertLokiStreams += listLog.size();
-				for (List<List<String>> listLogPartition : Lists.partition(listLog,
-						this.lokiDBConfig.getLokibBatchSize())) {
-					LokiStreams lokiStreams = new LokiStreams();
-					List<LokiStream> lokiStreamList = new ArrayList<>();
-					LokiStream lokiStream = new LokiStream();
-					lokiStream.setStream(labels);
-					lokiStream.setValues(listLogPartition);
-					lokiStreamList.add(lokiStream);
-					lokiStreams.setStreams(lokiStreamList);
-					String requestJSON = mapper.writeValueAsString(lokiStreams);
-					LOGGER.info("Loki Request Payload: " + requestJSON);
-					lokiStreamsCurrentQueueSize += 1;
-					this.lokiClient.sendAsync(requestJSON.getBytes()).thenAccept(this.lokiReponseDataResponseHandler);
-				}
-//				lokiStream.setValues(listLog);
-//				lokiStreamList.add(lokiStream);
-//				lokiStreams.setStreams(lokiStreamList);
-//				String requestJSON = mapper.writeValueAsString(lokiStreams);
-//				LOGGER.info("Loki Request Payload: " + requestJSON);
-//				lokiStreamsCurrentQueueSize += 1;
-//				this.lokiClient.sendAsync(requestJSON.getBytes()).thenAccept(this.lokiReponseDataResponseHandler);
-			} catch (JsonProcessingException e) {
-				LOGGER.error("Error JSON Convert: " + e.getMessage());
-				this.lokiClient
-						.sendAsync(String.format("[Error] Can't generate test metrics %s", e.getMessage()).getBytes())
-						.thenAccept(this.lokiReponseDataResponseHandler);
-			}
+			if (listLog.size() == 0)
+				return;
+			this.sendLog(listLog, labels);
 
 		};
+	}
+
+	private void sendLog(List<List<String>> listLog, Map<String, String> labels) {
+		try {
+			LOGGER.info("===== Total Logs Adding " + listLog.size());
+			totalLogConvertLokiStreams += listLog.size();
+			for (List<List<String>> listLogPartition : Lists.partition(listLog,
+					this.lokiDBConfig.getLokibBatchSize())) {
+				LokiStreams lokiStreams = new LokiStreams();
+				List<LokiStream> lokiStreamList = new ArrayList<>();
+				LokiStream lokiStream = new LokiStream();
+				lokiStream.setStream(labels);
+				lokiStream.setValues(listLogPartition);
+				lokiStreamList.add(lokiStream);
+				lokiStreams.setStreams(lokiStreamList);
+				String requestJSON = mapper.writeValueAsString(lokiStreams);
+				LOGGER.info("Loki Request Payload: " + requestJSON);
+				lokiStreamsCurrentQueueSize += 1;
+				this.lokiClient.sendAsync(requestJSON.getBytes()).thenAccept(this.lokiReponseDataResponseHandler);
+			}
+		} catch (JsonProcessingException e) {
+			LOGGER.error("Error JSON Convert: " + e.getMessage());
+			this.lokiClient
+					.sendAsync(String.format("[Error] Can't generate test metrics %s", e.getMessage()).getBytes())
+					.thenAccept(this.lokiReponseDataResponseHandler);
+		}
 	}
 
 	private ExecutorService createHttpClientThreadPool() {
