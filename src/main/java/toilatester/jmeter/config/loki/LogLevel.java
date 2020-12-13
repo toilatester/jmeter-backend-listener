@@ -18,4 +18,8 @@ public enum LogLevel {
 		throw new EnumConstantNotPresentException(LogLevel.class, logLevel);
 	}
 
+	public String value() {
+		return this.logLevel;
+	}
+
 }

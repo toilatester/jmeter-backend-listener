@@ -32,33 +32,32 @@ import toilatester.jmeter.config.influxdb.measurement.TestStartEndMeasurement;
 import toilatester.jmeter.config.influxdb.measurement.VirtualUsersMeasurement;
 import toilatester.jmeter.report.exception.ReportException;
 
-
 /**
  * Backend listener that writes JMeter metrics to influxDB directly.
  * 
  * @author MinhHoang
  *
  */
-public class JMeterInfluxDBBackendListenerClient extends AbstractBackendListenerClient implements Runnable {
+public class InfluxBackendListener extends AbstractBackendListenerClient implements Runnable {
 	/**
 	 * Logger.
 	 */
-	private static final Logger LOGGER = LoggerFactory.getLogger(JMeterInfluxDBBackendListenerClient.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InfluxBackendListener.class);
 
 	private static final String KEY_USE_REGEX_FOR_SAMPLER_LIST = "useRegexForSamplerList";
-	
+
 	private static final String KEY_TEST_NAME = "testName";
-	
+
 	private static final String KEY_NODE_NAME = "nodeName";
-	
+
 	private static final String KEY_SAMPLERS_LIST = "samplersList";
-	
+
 	private static final String KEY_RECORD_SUB_SAMPLES = "recordSubSamples";
 
 	private static final String SEPARATOR = ";";
-	
+
 	private static final int ONE_MS_IN_NANOSECONDS = 1000000;
-	
+
 	private static final Object LOCK = new Object();
 
 	private ScheduledExecutorService scheduler;
@@ -78,7 +77,6 @@ public class JMeterInfluxDBBackendListenerClient extends AbstractBackendListener
 	private Random randomNumberGenerator;
 
 	private boolean recordSubSamples;
-
 
 	@Override
 	public void handleSampleResults(List<SampleResult> sampleResults, BackendListenerContext context) {
@@ -203,25 +201,31 @@ public class JMeterInfluxDBBackendListenerClient extends AbstractBackendListener
 	@Override
 	public void setupTest(BackendListenerContext context) throws Exception {
 		super.setupTest(context);
-		testName = context.getParameter(KEY_TEST_NAME, "Test");
-		randomNumberGenerator = new Random();
-		nodeName = context.getParameter(KEY_NODE_NAME, "Test-Node");
+		try {
+			testName = context.getParameter(KEY_TEST_NAME, "Test");
+			randomNumberGenerator = new Random();
+			nodeName = context.getParameter(KEY_NODE_NAME, "Test-Node");
 
-		setupInfluxClient(context);
-		influxDB.write(influxDBConfig.getInfluxDatabase(), influxDBConfig.getInfluxRetentionPolicy(),
-				Point.measurement(TestStartEndMeasurement.MEASUREMENT_NAME)
-						.time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-						.tag(TestStartEndMeasurement.Tags.TYPE, TestStartEndMeasurement.Values.STARTED)
-						.tag(TestStartEndMeasurement.Tags.NODE_NAME, nodeName)
-						.addField(TestStartEndMeasurement.Fields.TEST_NAME, testName).build());
+			setupInfluxClient(context);
+			influxDB.write(influxDBConfig.getInfluxDatabase(), influxDBConfig.getInfluxRetentionPolicy(),
+					Point.measurement(TestStartEndMeasurement.MEASUREMENT_NAME)
+							.time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+							.tag(TestStartEndMeasurement.Tags.TYPE, TestStartEndMeasurement.Values.STARTED)
+							.tag(TestStartEndMeasurement.Tags.NODE_NAME, nodeName)
+							.addField(TestStartEndMeasurement.Fields.TEST_NAME, testName).build());
 
-		parseSamplers(context);
-		scheduler = Executors.newScheduledThreadPool(1);
+			parseSamplers(context);
+			scheduler = Executors.newScheduledThreadPool(1);
 
-		scheduler.scheduleAtFixedRate(this, 1, 1, TimeUnit.SECONDS);
+			scheduler.scheduleAtFixedRate(this, 1, 1, TimeUnit.SECONDS);
 
-		// Indicates whether to write sub sample records to the database
-		recordSubSamples = Boolean.parseBoolean(context.getParameter(KEY_RECORD_SUB_SAMPLES, "false"));
+			// Indicates whether to write sub sample records to the database
+			recordSubSamples = Boolean.parseBoolean(context.getParameter(KEY_RECORD_SUB_SAMPLES, "false"));
+		} catch (Exception e) {
+			LOGGER.error(String.format("Error in set up test %s", e.getMessage()));
+			JMeterContextService.endTest();
+			throw e;
+		}
 	}
 
 	@Override
@@ -265,33 +269,30 @@ public class JMeterInfluxDBBackendListenerClient extends AbstractBackendListener
 	/**
 	 * Setup influxDB client.
 	 * 
-	 * @param context
-	 *            {@link BackendListenerContext}.
+	 * @param context {@link BackendListenerContext}.
 	 */
 	private void setupInfluxClient(BackendListenerContext context) {
 		influxDBConfig = new InfluxDBConfig(context);
 		OkHttpClient.Builder build = new OkHttpClient().newBuilder().readTimeout(60, TimeUnit.SECONDS)
 				.connectTimeout(60, TimeUnit.SECONDS);
-		createInfluxDBConnection(build);		
+		createInfluxDBConnection(build);
 		influxDB.enableBatch(100, 15, TimeUnit.SECONDS);
 		createDatabaseIfNotExistent();
 	}
-	
-	private void createInfluxDBConnection(OkHttpClient.Builder build){
-		try{
+
+	private void createInfluxDBConnection(OkHttpClient.Builder build) {
+		try {
 			influxDB = InfluxDBFactory.connect(influxDBConfig.getInfluxDBURL(), influxDBConfig.getInfluxUser(),
 					influxDBConfig.getInfluxPassword(), build);
-			}
-		catch(IllegalArgumentException e){
-			influxDB = InfluxDBFactory.connect(influxDBConfig.getInfluxDBURL(), "default",
-					"default", build);
+		} catch (IllegalArgumentException e) {
+			influxDB = InfluxDBFactory.connect(influxDBConfig.getInfluxDBURL(), "default", "default", build);
 		}
 	}
+
 	/**
 	 * Parses list of samplers.
 	 * 
-	 * @param context
-	 *            {@link BackendListenerContext}.
+	 * @param context {@link BackendListenerContext}.
 	 */
 	private void parseSamplers(BackendListenerContext context) {
 		String samplersList = context.getParameter(KEY_SAMPLERS_LIST, "");

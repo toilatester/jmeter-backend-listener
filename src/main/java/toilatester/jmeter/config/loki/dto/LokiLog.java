@@ -10,9 +10,9 @@ public class LokiLog {
 	long unixEpochNano;
 	String logMessage = "";
 
-	public LokiLog(String logMessage) {
+	public LokiLog(String logLevel, String logMessage) {
 		this.unixEpochNano = System.currentTimeMillis() * ONE_MS_IN_NANOSECONDS;
-		this.setLogMessage(logMessage);
+		this.setLogMessage(logLevel, logMessage);
 	}
 
 	public LokiLog() {
@@ -31,7 +31,7 @@ public class LokiLog {
 		return logMessage;
 	}
 
-	public void setLogMessage(String logMessage) {
-		this.logMessage = logMessage;
+	public void setLogMessage(String logLevel, String logMessage) {
+		this.logMessage = String.format("[%s] %s", logLevel, logMessage);
 	}
 }
