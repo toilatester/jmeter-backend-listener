@@ -43,8 +43,6 @@ import toilatester.jmeter.config.loki.dto.LokiStreams;
 public class LokiBackendListener extends AbstractBackendListenerClient implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LokiBackendListener.class);
 
-	private static final Object LOCK = new Object();
-
 	private LokiDBClient lokiClient;
 
 	private LokiDBConfig lokiDBConfig;
@@ -96,8 +94,8 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 			setUpLokiClient(context);
 			sendLogDataSchedulerSession = sendLogDataScheduler.scheduleAtFixedRate(dispatchLogToLoki(), 500,
 					this.lokiDBConfig.getLokiSendBatchIntervalTime(), TimeUnit.MILLISECONDS);
-			addThreadMetricDataSchedulerSession = addThreadMetricDataScheduler.scheduleAtFixedRate(this, 10, 1,
-					TimeUnit.SECONDS);
+			addThreadMetricDataSchedulerSession = addThreadMetricDataScheduler.scheduleAtFixedRate(this, 500, 2000,
+					TimeUnit.MILLISECONDS);
 		} catch (Exception e) {
 			LOGGER.error(String.format("Error in set up test %s", e.getMessage()));
 			if (sendLogDataSchedulerSession != null)
@@ -121,12 +119,10 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 
 	@Override
 	public void handleSampleResults(List<SampleResult> sampleResults, BackendListenerContext context) {
-		synchronized (LOCK) {
-			LOGGER.info("Store sampler results to loki database");
-			List<SampleResult> allSampleResults = new ArrayList<>();
-			collectAllSampleResult(allSampleResults, sampleResults);
-			storeSampleResultsToDB(allSampleResults);
-		}
+		LOGGER.info("Store sampler results to loki database");
+		List<SampleResult> allSampleResults = new ArrayList<>();
+		collectAllSampleResult(allSampleResults, sampleResults);
+		storeSampleResultsToDB(allSampleResults);
 	}
 
 	private void collectAllSampleResult(List<SampleResult> allSampleResults, List<SampleResult> sampleResults) {
@@ -305,21 +301,23 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	@Override
 	public Arguments getDefaultParameters() {
 		Arguments arguments = new Arguments();
+		
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_PROTOCOL, LokiDBConfig.DEFAULT_PROTOCOL);
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_HOST, LokiDBConfig.DEFAULT_HOST);
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_PORT, Integer.toString(LokiDBConfig.DEFAULT_PORT));
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_API_ENDPOINT, LokiDBConfig.DEFAUlT_LOKI_API_ENDPOINT);
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_BATCH_SIZE, Integer.toString(LokiDBConfig.DEFAULT_BATCH_SIZE));
+		arguments.addArgument(LokiDBConfig.KEY_LOKI_EXTERNAL_LABELS, LokiDBConfig.DEFAUlT_LOKI_EXTERNAL_LABEL);
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME,
 				Integer.toString(LokiDBConfig.DEFAULT_SEND_BATCH_INTERVAL_TIME));
-		arguments.addArgument(LokiDBConfig.KEY_LOKI_EXTERNAL_LABELS, LokiDBConfig.DEFAUlT_LOKI_EXTERNAL_LABEL);
+		arguments.addArgument(LokiDBConfig.KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED,
+				Boolean.toString(LokiDBConfig.DEFAULT_LOG_RESPONSE_BODY_FAILED_SAMPLER_ONLY));
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_BATCH_TIMEOUT_MS,
 				Long.toString(LokiDBConfig.DEFAULT_BATCH_TIMEOUT_MS));
 		arguments.addArgument(LokiDBConfig.KEY_CONNECTION_TIMEOUT_MS,
 				Long.toString(LokiDBConfig.DEFAULT_CONNECTION_TIMEOUT_MS));
 		arguments.addArgument(LokiDBConfig.KEY_REQUEST_TIMEOUT_MS,
 				Long.toString(LokiDBConfig.DEFAULT_REQUEST_TIMEOUT_MS));
-
 		return arguments;
 	}
 
@@ -342,6 +340,13 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	}
 
 	private String generateResponseBodySampleLog(SampleResult result) {
+		String responseBody = "Turn on log reponse body for failure sampler only";
+		boolean logResponseBodyDataWithTurnOnLogFailureMode = this.lokiDBConfig.isLokiLogResponseBodyFailedSamplerOnly()
+				&& result.getErrorCount() > 0;
+		if (logResponseBodyDataWithTurnOnLogFailureMode
+				|| !this.lokiDBConfig.isLokiLogResponseBodyFailedSamplerOnly()) {
+			responseBody = result.getResponseDataAsString();
+		}
 		StringBuilder assertionResultMsg = new StringBuilder();
 		Arrays.asList(result.getAssertionResults()).forEach(assertionResult -> {
 			assertionResultMsg.append(
@@ -351,7 +356,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 		});
 		return String.format("Sampler [%s] \nStatus Code: [%s] \nAssertions Result: \n%s \nResponse Body: \n%s \n",
 				result.getSampleLabel(), result.getResponseCode(), assertionResultMsg.toString(),
-				result.getResponseDataAsString());
+				responseBody);
 	}
 
 	private String generateResponseHeaderSampleLog(SampleResult result) {
