@@ -72,3 +72,15 @@ To build the plugin and copy it to JMeter plugin for the
 |lokiBatchTimeout |Timeout for expiring unused threads after 10 batch intervals, the value is milliseconds|x|Number|
 |lokiConnectionTimeout       |Timeout for connecting to Loki, the value is milliseconds|x|Number|
 |lokiRequestTimeout          |imeout for process request to Loki, the value is milliseconds|x|Number|
+
+## Example LokiBackendListener Result
+![l1](/docs/images/7.png)
+![l2](/docs/images/8.png)
+![l3](/docs/images/9.png)
+![l4](/docs/images/10.png)
+
+## Example InfluxDBBackendListener Result
+![i1](/docs/images/11.png)
+![i2](/docs/images/12.png)
+![i3](/docs/images/13.png)
+![i4](/docs/images/14.png)
