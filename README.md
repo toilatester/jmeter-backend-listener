@@ -39,7 +39,7 @@ To build the plugin and copy it to JMeter plugin for the
 ##### Step 4: Select and Configuration the InfluxBackendListener or LokiBackEndListener
 ![select-listener](/docs/images/4.png)
 ![config-influxdb-listener](/docs/images/5.png)
-![config-loki-listener](/docs/images/645.png)
+![config-loki-listener](/docs/images/6.png)
 
 ## InfluxBackendListener Parameters
 | **Parameter**         | **Description**      | **Required**|**Type**|
