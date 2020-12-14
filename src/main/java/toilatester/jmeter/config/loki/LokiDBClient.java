@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +67,8 @@ public class LokiDBClient {
 			}
 
 		} catch (InterruptedException e) {
-			LOGGER.info(String.format("Error while wait for all java http client thread pool completed: %s", e.getMessage()));
+			LOGGER.info(String.format("Error while wait for all java http client thread pool completed: %s",
+					e.getMessage()));
 			httpClientThreadPool.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
@@ -82,7 +84,8 @@ public class LokiDBClient {
 			}
 
 		} catch (InterruptedException e) {
-			LOGGER.info(String.format("Error while wait for all send log thread pool completed: %s", e.getCause().toString()));
+			LOGGER.info(String.format("Error while wait for all send log thread pool completed: %s",
+					e.getCause().toString()));
 			sendLogThreadPool.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
@@ -97,11 +100,47 @@ public class LokiDBClient {
 				var request = requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofByteArray(batch)).build();
 				var response = client.send(request, HttpResponse.BodyHandlers.ofString());
 				return new LokiResponse(response.statusCode(), response.body());
-			} catch (Exception e) {
-				LOGGER.info(String.format("Error while sending batch to Loki %s", e.getMessage()));
-				return new LokiResponse(400, e.getMessage());
+
+			} catch (Exception innerException) {
+				String[] stackTrace = ExceptionUtils.getRootCauseStackTrace(innerException.getCause());
+				String errorMessage = String.format("Error: %s \n%s", innerException.getMessage(),
+						String.join("\n", stackTrace));
+				LOGGER.warn(String.format("Error while sending batch to Loki. %s", errorMessage));
+				return new LokiResponse(400, errorMessage);
+
 			}
 		}, this.sendLogThreadPool);
+	}
+
+	public CompletableFuture<LokiResponse> sendAsyncWithRetry(byte[] batch, int retryNumber) {
+		return CompletableFuture.supplyAsync(() -> {
+			int enclosingRetryNumber = 0;
+			LokiResponse lokiResponse = new LokiResponse(400, "Bad Request");
+			while (enclosingRetryNumber < retryNumber) {
+				try {
+					var request = requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofByteArray(batch)).build();
+					var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+					if (response.statusCode() == 204 || response.statusCode() == 200) {
+						return new LokiResponse(response.statusCode(), response.body());
+					}
+					LOGGER.error(String.format("Error while sending batch to Loki %s. Trying to resend %d",
+							response.body(), retryNumber));
+					lokiResponse.setStatus(response.statusCode());
+					lokiResponse.setBody(response.body());
+				} catch (Exception innerException) {
+					String[] stackTrace = ExceptionUtils.getRootCauseStackTrace(innerException.getCause());
+					String errorMessage = String.format("Error: %s \n%s", innerException.getMessage(),
+							String.join("\n", stackTrace));
+					LOGGER.warn(String.format("Error while sending batch to Loki %s. Trying to resend %d", errorMessage,
+							retryNumber));
+					lokiResponse.setStatus(400);
+					lokiResponse.setBody(errorMessage);
+				}
+				enclosingRetryNumber += 1;
+			}
+			return lokiResponse;
+		}, this.sendLogThreadPool);
+
 	}
 
 }
