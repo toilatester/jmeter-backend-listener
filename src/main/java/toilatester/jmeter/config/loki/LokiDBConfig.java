@@ -12,11 +12,12 @@ public class LokiDBConfig {
 	public static final int DEFAULT_PORT = 3100;
 	public static final String DEFAUlT_LOKI_API_ENDPOINT = "/loki/api/v1/push";
 	public static final String DEFAUlT_LOKI_EXTERNAL_LABEL = "jmeter_plugin=loki-log";
-	public static final int DEFAULT_BATCH_SIZE = 512;
-	public static final int DEFAULT_SEND_BATCH_INTERVAL_TIME = 200;
+	public static final int DEFAULT_BATCH_SIZE = 100;
+	public static final int DEFAULT_SEND_BATCH_INTERVAL_TIME = 1000;
 	public static final long DEFAULT_BATCH_TIMEOUT_MS = 60 * 1000;
 	public static final long DEFAULT_CONNECTION_TIMEOUT_MS = 30 * 1000;
 	public static final long DEFAULT_REQUEST_TIMEOUT_MS = 5 * 1000;
+	public static final boolean DEFAULT_LOG_RESPONSE_BODY_FAILED_SAMPLER_ONLY = true;
 
 	public static final String KEY_LOKI_DB_PROTOCOL = "lokiPortocol";
 	public static final String KEY_LOKI_DB_HOST = "lokiHost";
@@ -28,6 +29,7 @@ public class LokiDBConfig {
 	public static final String KEY_CONNECTION_TIMEOUT_MS = "lokiConnectionTimeout";
 	public static final String KEY_REQUEST_TIMEOUT_MS = "lokiRequestTimeout";
 	public static final String KEY_LOKI_EXTERNAL_LABELS = "lokiLabels";
+	public static final String KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED = "lokiLogResponseBodyFailedSamplerOnly";
 	private static final String DEFAULT_DELIMITER_CHAR = ",";
 	private String lokiProtocol;
 	private String lokiHost;
@@ -38,6 +40,7 @@ public class LokiDBConfig {
 	private long lokiBatchTimeout;
 	private long lokiConnectiontimeout;
 	private long lokiRequestTimeout;
+	private boolean lokiLogResponseBodyFailedSamplerOnly;
 	private Map<String, String> lokiExternalLabels = new HashMap<String, String>();
 
 	public String getLokiProtocol() {
@@ -139,12 +142,15 @@ public class LokiDBConfig {
 		int lokiBatchSize = context.getIntParameter(KEY_LOKI_DB_BATCH_SIZE);
 		long lokiSendBatchIntervalTime = context.getIntParameter(KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME);
 		long lokiBatchTimeout = context.getLongParameter(KEY_LOKI_BATCH_TIMEOUT_MS);
+		boolean lokiLogResponseBodyFailedSamplerOnly = context.getBooleanParameter(
+				KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED, DEFAULT_LOG_RESPONSE_BODY_FAILED_SAMPLER_ONLY);
 		setLokiConnectiontimeout(lokiConnectionTimeout);
 		setLokiRequestTimeout(lokiRequestTimeout);
 		setLokibBatchSize(lokiBatchSize);
 		setLokiSendBatchIntervalTime(lokiSendBatchIntervalTime);
 		setLokiBatchTimeout(lokiBatchTimeout);
 		setLokiExternalLabels(this.parsingExternalLabels(context.getParameter(KEY_LOKI_EXTERNAL_LABELS)));
+		setLokiLogResponseBodyFailedSamplerOnly(lokiLogResponseBodyFailedSamplerOnly);
 	}
 
 	private Map<String, String> parsingExternalLabels(String rawExternalLabel) {
@@ -154,8 +160,8 @@ public class LokiDBConfig {
 		String[] listlabels = rawExternalLabel.split(DEFAULT_DELIMITER_CHAR);
 		for (String label : listlabels) {
 			String[] labelValue = label.split("=");
-			//if (labelValue.length > 0)
-				externalLokiLabels.put(labelValue[0], labelValue[1]);
+			// if (labelValue.length > 0)
+			externalLokiLabels.put(labelValue[0], labelValue[1]);
 		}
 		return externalLokiLabels;
 	}
@@ -186,6 +192,14 @@ public class LokiDBConfig {
 
 	public void setLokiSendBatchIntervalTime(long lokiSendBatchIntervalTime) {
 		this.lokiSendBatchIntervalTime = lokiSendBatchIntervalTime;
+	}
+
+	public boolean isLokiLogResponseBodyFailedSamplerOnly() {
+		return lokiLogResponseBodyFailedSamplerOnly;
+	}
+
+	public void setLokiLogResponseBodyFailedSamplerOnly(boolean lokiLogResponseBodyFailedSamplerOnly) {
+		this.lokiLogResponseBodyFailedSamplerOnly = lokiLogResponseBodyFailedSamplerOnly;
 	}
 
 }
