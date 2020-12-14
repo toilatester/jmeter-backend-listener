@@ -16,7 +16,7 @@ public class LokiDBConfig {
 	public static final int DEFAULT_SEND_BATCH_INTERVAL_TIME = 1000;
 	public static final long DEFAULT_BATCH_TIMEOUT_MS = 60 * 1000;
 	public static final long DEFAULT_CONNECTION_TIMEOUT_MS = 30 * 1000;
-	public static final long DEFAULT_REQUEST_TIMEOUT_MS = 5 * 1000;
+	public static final long DEFAULT_REQUEST_TIMEOUT_MS = 30 * 1000;
 	public static final boolean DEFAULT_LOG_RESPONSE_BODY_FAILED_SAMPLER_ONLY = true;
 
 	public static final String KEY_LOKI_DB_PROTOCOL = "lokiPortocol";

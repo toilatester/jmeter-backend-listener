@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.4">
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.3">
   <hashTree>
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Test Plan" enabled="true">
       <stringProp name="TestPlan.comments"></stringProp>
@@ -188,74 +188,6 @@
         <stringProp name="filename"></stringProp>
       </ResultCollector>
       <hashTree/>
-      <BackendListener guiclass="BackendListenerGui" testclass="BackendListener" testname="Backend Listener" enabled="true">
-        <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
-          <collectionProp name="Arguments.arguments">
-            <elementProp name="lokiPortocol" elementType="Argument">
-              <stringProp name="Argument.name">lokiPortocol</stringProp>
-              <stringProp name="Argument.value">http</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="lokiHost" elementType="Argument">
-              <stringProp name="Argument.name">lokiHost</stringProp>
-              <stringProp name="Argument.value">192.168.10.69</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="lokiPort" elementType="Argument">
-              <stringProp name="Argument.name">lokiPort</stringProp>
-              <stringProp name="Argument.value">30842</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="lokiApiEndPoint" elementType="Argument">
-              <stringProp name="Argument.name">lokiApiEndPoint</stringProp>
-              <stringProp name="Argument.value">/loki/api/v1/push</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="lokiBatchSize" elementType="Argument">
-              <stringProp name="Argument.name">lokiBatchSize</stringProp>
-              <stringProp name="Argument.value">500</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="lokiLabels" elementType="Argument">
-              <stringProp name="Argument.name">lokiLabels</stringProp>
-              <stringProp name="Argument.value">jmeter_plugin=loki-log</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="lokiSendBatchIntervalTime" elementType="Argument">
-              <stringProp name="Argument.name">lokiSendBatchIntervalTime</stringProp>
-              <stringProp name="Argument.value">1000</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="lokiLogResponseBodyFailedSamplerOnly" elementType="Argument">
-              <stringProp name="Argument.name">lokiLogResponseBodyFailedSamplerOnly</stringProp>
-              <stringProp name="Argument.value">true</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="lokiBatchTimeout" elementType="Argument">
-              <stringProp name="Argument.name">lokiBatchTimeout</stringProp>
-              <stringProp name="Argument.value">30000</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="lokiConnectionTimeout" elementType="Argument">
-              <stringProp name="Argument.name">lokiConnectionTimeout</stringProp>
-              <stringProp name="Argument.value">60000</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="lokiRequestTimeout" elementType="Argument">
-              <stringProp name="Argument.name">lokiRequestTimeout</stringProp>
-              <stringProp name="Argument.value">60000</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="lokiBatchIntervalTime" elementType="Argument">
-              <stringProp name="Argument.name">lokiBatchIntervalTime</stringProp>
-              <stringProp name="Argument.value">1000</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-          </collectionProp>
-        </elementProp>
-        <stringProp name="classname">toilatester.jmeter.report.LokiBackendListener</stringProp>
-      </BackendListener>
-      <hashTree/>
       <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
         <objProp>
@@ -292,6 +224,69 @@
         </objProp>
         <stringProp name="filename"></stringProp>
       </ResultCollector>
+      <hashTree/>
+      <BackendListener guiclass="BackendListenerGui" testclass="BackendListener" testname="Backend Listener" enabled="true">
+        <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
+          <collectionProp name="Arguments.arguments">
+            <elementProp name="lokiPortocol" elementType="Argument">
+              <stringProp name="Argument.name">lokiPortocol</stringProp>
+              <stringProp name="Argument.value">http</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="lokiHost" elementType="Argument">
+              <stringProp name="Argument.name">lokiHost</stringProp>
+              <stringProp name="Argument.value">localhost</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="lokiPort" elementType="Argument">
+              <stringProp name="Argument.name">lokiPort</stringProp>
+              <stringProp name="Argument.value">3100</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="lokiApiEndPoint" elementType="Argument">
+              <stringProp name="Argument.name">lokiApiEndPoint</stringProp>
+              <stringProp name="Argument.value">/loki/api/v1/push</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="lokiBatchSize" elementType="Argument">
+              <stringProp name="Argument.name">lokiBatchSize</stringProp>
+              <stringProp name="Argument.value">100</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="lokiLabels" elementType="Argument">
+              <stringProp name="Argument.name">lokiLabels</stringProp>
+              <stringProp name="Argument.value">jmeter_plugin=loki-log</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="lokiSendBatchIntervalTime" elementType="Argument">
+              <stringProp name="Argument.name">lokiSendBatchIntervalTime</stringProp>
+              <stringProp name="Argument.value">1000</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="lokiLogResponseBodyFailedSamplerOnly" elementType="Argument">
+              <stringProp name="Argument.name">lokiLogResponseBodyFailedSamplerOnly</stringProp>
+              <stringProp name="Argument.value">true</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="lokiBatchTimeout" elementType="Argument">
+              <stringProp name="Argument.name">lokiBatchTimeout</stringProp>
+              <stringProp name="Argument.value">60000</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="lokiConnectionTimeout" elementType="Argument">
+              <stringProp name="Argument.name">lokiConnectionTimeout</stringProp>
+              <stringProp name="Argument.value">30000</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="lokiRequestTimeout" elementType="Argument">
+              <stringProp name="Argument.name">lokiRequestTimeout</stringProp>
+              <stringProp name="Argument.value">5000</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+          </collectionProp>
+        </elementProp>
+        <stringProp name="classname">toilatester.jmeter.report.LokiBackendListener</stringProp>
+      </BackendListener>
       <hashTree/>
     </hashTree>
   </hashTree>
