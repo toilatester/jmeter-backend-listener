@@ -36,7 +36,8 @@ dependencies {
 	compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.0'
 	testImplementation(platform('org.junit:junit-bom:5.7.0'))
 	testImplementation('org.junit.jupiter:junit-jupiter')
-	testCompile "com.github.tomakehurst:wiremock-jre8:2.27.2"
+	testCompile group: "com.github.tomakehurst",name :"wiremock-jre8", version:"2.27.2"
+	testCompile group: 'com.google.guava', name: 'guava', version: '30.0-jre'
 	
 }
 
