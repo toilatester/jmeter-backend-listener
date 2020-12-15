@@ -1,19 +1,14 @@
-class JMeterRule implements ComponentMetadataRule {
-	void execute(ComponentMetadataContext context) {
-		context.details.allVariants {
-			withDependencies {
-				removeAll { it.group == "org.apache.jmeter" && it.name == "bom" }
-			}
-		}
-	}
-}
-
 apply plugin: 'java'
 apply plugin: 'eclipse'
 
 sourceCompatibility = 11
 
-def version = '1.0'
+compileJava {
+    sourceCompatibility = 11
+    targetCompatibility = 11
+}
+
+def version = '1.0.3'
 def title = 'JMeterInfluxDBListener'
 
 jar {
