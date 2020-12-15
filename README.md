@@ -18,7 +18,7 @@ If you are interested in this project, please drop a ⭐!
 
 -   Java 11 or later
 -   Gradle 6.7 or later
-- 
+
 Check out the project to the directory on your local machine and run:
 
 > gradle check
@@ -44,7 +44,7 @@ To build the plugin and copy it to JMeter plugin for the
 ## InfluxBackendListener Parameters
 | **Parameter**         | **Description**      | **Required**|**Type**|
 |-----------------------|----------------------|-------------|--------|
-|testName                    the influxdb field value|x|String|
+|testName               |the influxdb field value|x|String|
 |nodeName.                 |the influxdb tag value|x|String|
 |influxDBProtocol       |the protocol that is used to connect InfluxDB **http** or **https**|x|String|
 |influxDBHost           |InfluxDB host name|x|String|
