@@ -7,6 +7,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 
 public class LokiMockServer {
@@ -42,6 +43,10 @@ public class LokiMockServer {
 		this.wireMockServer.stop();
 	}
 
+	public void reset() {
+		this.wireMockServer.resetAll();
+	}
+
 	public String stubResponseData() {
 		return this.wireMockServer.baseUrl();
 	}
@@ -50,6 +55,14 @@ public class LokiMockServer {
 		this.wireMockServer.stubFor(
 				post(urlPathMatching("/loki/api/v1/push")).withHeader("Content-Type", equalTo("application/json"))
 						.willReturn(aResponse().withStatus(statusCode).withBody(stubLog)));
+	}
+
+	public void stubLokiPushThreadMetrics(String stubLog, int statusCode) {
+		this.wireMockServer.stubFor(post(urlPathMatching("/loki/api/v1/push"))
+				.withHeader("Content-Type", equalTo("application/json"))
+				.withRequestBody(
+						WireMock.matchingJsonPath("$.streams[0].stream.jmeter_plugin", WireMock.equalTo("loki-log")))
+				.willReturn(aResponse().withStatus(statusCode).withBody(stubLog)));
 	}
 
 	public WireMockServer getWireMockServer() {

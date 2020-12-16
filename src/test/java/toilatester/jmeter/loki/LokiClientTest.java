@@ -144,6 +144,23 @@ public class LokiClientTest extends BaseTest {
 	}
 
 	@Test
+	public void testLokiClientRetryToTerminateThreadPool() throws InterruptedException, ExecutionException {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 200);
+		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
+		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 3000, 3000);
+		client.sendAsync("Hello".getBytes()).thenAccept((r) -> {
+			future.complete(r);
+		});
+		future.join();
+		client.stopLokiClient(0, 0);
+		this.lokiMockServer.getWireMockServer().verify(1,
+				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		Assertions.assertEquals(200, future.get().getStatus());
+		client.stopLokiClient(0, 0);
+	}
+
+	@Test
 	public void testLokiClientCantSendWithRetryWhenStop() throws InterruptedException, ExecutionException {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 400);
 		CompletableFuture<LokiResponse> future = new CompletableFuture<>();

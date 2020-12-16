@@ -52,40 +52,23 @@ public class LokiDBClient {
 
 	public void stopLokiClient(long clientThreadPoolTimeout, long sendLogThreadPoolTimeout) {
 		this.httpClientThreadPool.shutdown();
-		this.waitForClientThreadPoolCompleted(clientThreadPoolTimeout);
+		this.waitForTerminateThreadPool(this.httpClientThreadPool,clientThreadPoolTimeout, "java http client");
 		this.sendLogThreadPool.shutdown();
-		this.waitForSendLogThreadPoolCompleted(sendLogThreadPoolTimeout);
+		this.waitForTerminateThreadPool(this.sendLogThreadPool,sendLogThreadPoolTimeout, "send log");
 	}
 
-	private void waitForClientThreadPoolCompleted(long timeout) {
+	private void waitForTerminateThreadPool(ExecutorService threadPool, long timeout, String threadPoolServiceName) {
 		try {
-			if (!this.httpClientThreadPool.awaitTermination(timeout, TimeUnit.SECONDS)) {
-				this.httpClientThreadPool.shutdownNow();
-				if (!this.httpClientThreadPool.awaitTermination(timeout, TimeUnit.SECONDS)) {
+			if (!threadPool.awaitTermination(timeout, TimeUnit.SECONDS)) {
+				threadPool.shutdownNow();
+				if (!threadPool.awaitTermination(timeout, TimeUnit.SECONDS)) {
 					LOGGER.info(String.format("Error while wait for all thread pool completed"));
 				}
 			}
 
 		} catch (InterruptedException e) {
-			LOGGER.info(String.format("Error while wait for all java http client thread pool completed: %s",
-					e.getMessage()));
-			httpClientThreadPool.shutdownNow();
-			Thread.currentThread().interrupt();
-		}
-	}
-
-	private void waitForSendLogThreadPoolCompleted(long timeout) {
-		try {
-			if (!this.sendLogThreadPool.awaitTermination(timeout, TimeUnit.SECONDS)) {
-				this.sendLogThreadPool.shutdownNow();
-				if (!this.sendLogThreadPool.awaitTermination(timeout, TimeUnit.SECONDS)) {
-					LOGGER.info(String.format("Error while wait for all thread pool completed"));
-				}
-			}
-
-		} catch (InterruptedException e) {
-			LOGGER.info(String.format("Error while wait for all send log thread pool completed: %s",
-					e.getCause().toString()));
+			LOGGER.info(String.format("Error while wait for all %s thread pool completed: %s",
+					threadPoolServiceName, e.getCause().toString()));
 			sendLogThreadPool.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
@@ -95,8 +78,9 @@ public class LokiDBClient {
 		// Java HttpClient natively supports async API
 		// But we have to use its sync API to preserve the ordering of batches
 		// This will avoid having issue 'entry out of order' for stream
-		if(this.sendLogThreadPool.isShutdown())
-			return CompletableFuture.completedFuture(new LokiResponse(400, "Re-init LokiDBClient, the current thread pool terminated"));
+		if (this.sendLogThreadPool.isShutdown())
+			return CompletableFuture
+					.completedFuture(new LokiResponse(400, "Re-init LokiDBClient, the current thread pool terminated"));
 		return CompletableFuture.supplyAsync(() -> {
 			try {
 				var request = requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofByteArray(batch)).build();
@@ -115,8 +99,9 @@ public class LokiDBClient {
 	}
 
 	public CompletableFuture<LokiResponse> sendAsyncWithRetry(byte[] batch, int retryNumber) {
-		if(this.sendLogThreadPool.isShutdown())
-			return CompletableFuture.completedFuture(new LokiResponse(400, "Re-init LokiDBClient, the current thread pool terminated"));
+		if (this.sendLogThreadPool.isShutdown())
+			return CompletableFuture
+					.completedFuture(new LokiResponse(400, "Re-init LokiDBClient, the current thread pool terminated"));
 		return CompletableFuture.supplyAsync(() -> {
 			int enclosingRetryNumber = 0;
 			LokiResponse lokiResponse = new LokiResponse(400, "Bad Request");
