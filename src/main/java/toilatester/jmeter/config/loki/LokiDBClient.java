@@ -95,6 +95,8 @@ public class LokiDBClient {
 		// Java HttpClient natively supports async API
 		// But we have to use its sync API to preserve the ordering of batches
 		// This will avoid having issue 'entry out of order' for stream
+		if(this.sendLogThreadPool.isShutdown())
+			return CompletableFuture.completedFuture(new LokiResponse(400, "Re-init LokiDBClient, the current thread pool terminated"));
 		return CompletableFuture.supplyAsync(() -> {
 			try {
 				var request = requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofByteArray(batch)).build();
@@ -113,6 +115,8 @@ public class LokiDBClient {
 	}
 
 	public CompletableFuture<LokiResponse> sendAsyncWithRetry(byte[] batch, int retryNumber) {
+		if(this.sendLogThreadPool.isShutdown())
+			return CompletableFuture.completedFuture(new LokiResponse(400, "Re-init LokiDBClient, the current thread pool terminated"));
 		return CompletableFuture.supplyAsync(() -> {
 			int enclosingRetryNumber = 0;
 			LokiResponse lokiResponse = new LokiResponse(400, "Bad Request");
@@ -120,7 +124,8 @@ public class LokiDBClient {
 				try {
 					var request = requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofByteArray(batch)).build();
 					var response = client.send(request, HttpResponse.BodyHandlers.ofString());
-					if (response.statusCode() == 204 || response.statusCode() == 200) {
+					int statusCode = response.statusCode();
+					if (204 == statusCode || 200 == statusCode) {
 						return new LokiResponse(response.statusCode(), response.body());
 					}
 					LOGGER.error(String.format("Error while sending batch to Loki %s. Trying to resend %d",
@@ -132,7 +137,7 @@ public class LokiDBClient {
 					String errorMessage = String.format("Error: %s \n%s", innerException.getMessage(),
 							String.join("\n", stackTrace));
 					LOGGER.warn(String.format("Error while sending batch to Loki %s. Trying to resend %d", errorMessage,
-							retryNumber));
+							enclosingRetryNumber));
 					lokiResponse.setStatus(400);
 					lokiResponse.setBody(errorMessage);
 				}

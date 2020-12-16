@@ -27,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
 import toilatester.jmeter.config.loki.LogLevel;
@@ -57,8 +56,6 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	private ScheduledFuture<?> addThreadMetricDataSchedulerSession;
 
 	private LinkedBlockingQueue<LokiLog> lokiResponseDataLogQueue = new LinkedBlockingQueue<LokiLog>();
-
-	private ObjectMapper mapper = new ObjectMapper();
 
 	@SuppressWarnings("serial")
 	private Map<String, String> lokiReponseHeaderLabels = new HashMap<>() {
@@ -215,7 +212,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	private void sendThreadMetricsLog() {
 		try {
 			LokiStreams lokiStreams = this.generateThreadMetricLog();
-			String requestJSON = mapper.writeValueAsString(lokiStreams);
+			String requestJSON = lokiStreams.toJsonString();
 			LOGGER.debug("Loki Request Payload: " + requestJSON);
 			this.lokiClient.sendAsyncWithRetry(requestJSON.getBytes(), 3)
 					.thenAccept(this.lokiThreadMetricsResponseHandler);
@@ -277,7 +274,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 			lokiStream.setValues(generateTearDownTestLog());
 			lokiStreamList.add(lokiStream);
 			lokiStreams.setStreams(lokiStreamList);
-			String requestJSON = mapper.writeValueAsString(lokiStreams);
+			String requestJSON = lokiStreams.toJsonString();
 			return this.lokiClient.sendAsync(requestJSON.getBytes());
 		} catch (JsonProcessingException e) {
 			LOGGER.error("Error JSON Convert: " + e.getMessage());
@@ -390,7 +387,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 				lokiStream.setValues(listLogPartition);
 				lokiStreamList.add(lokiStream);
 				lokiStreams.setStreams(lokiStreamList);
-				String requestJSON = mapper.writeValueAsString(lokiStreams);
+				String requestJSON = lokiStreams.toJsonString();
 				LOGGER.debug("Loki Request Payload: " + requestJSON);
 				this.lokiClient.sendAsyncWithRetry(requestJSON.getBytes(), 3)
 						.thenAccept(this.lokiReponseDataResponseHandler);
@@ -445,7 +442,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	private CompletableFuture<LokiResponse> sendErrorLog(String log) {
 		try {
 			LokiStreams lokiStreams = this.generateErrorSendingLog(log);
-			String requestJSON = mapper.writeValueAsString(lokiStreams);
+			String requestJSON = lokiStreams.toJsonString();
 			LOGGER.debug("Loki Request Payload: " + requestJSON);
 			return this.lokiClient.sendAsyncWithRetry(requestJSON.getBytes(), 3);
 		} catch (JsonProcessingException e) {

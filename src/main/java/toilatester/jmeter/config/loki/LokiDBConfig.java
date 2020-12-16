@@ -110,7 +110,7 @@ public class LokiDBConfig {
 	private void initLokiDBProtocolCTX(BackendListenerContext context) {
 		String lokiDBProtocolCTX = context.getParameter(KEY_LOKI_DB_PROTOCOL);
 		if (StringUtils.isEmpty(lokiDBProtocolCTX)) {
-			throw new IllegalArgumentException(KEY_LOKI_DB_PROTOCOL + "must not be empty!");
+			throw new IllegalArgumentException(KEY_LOKI_DB_PROTOCOL + " must not be empty!");
 		}
 		setLokiProtocol(lokiDBProtocolCTX);
 	}
@@ -118,7 +118,7 @@ public class LokiDBConfig {
 	private void initLokiDBHostCTX(BackendListenerContext context) {
 		String lokiDBHostCTX = context.getParameter(KEY_LOKI_DB_HOST);
 		if (StringUtils.isEmpty(lokiDBHostCTX)) {
-			throw new IllegalArgumentException(KEY_LOKI_DB_HOST + "must not be empty!");
+			throw new IllegalArgumentException(KEY_LOKI_DB_HOST + " must not be empty!");
 		}
 		setLokiHost(lokiDBHostCTX);
 	}
@@ -131,7 +131,7 @@ public class LokiDBConfig {
 	private void initLokiDBApiUrlCTX(BackendListenerContext context) {
 		String lokiDBApiUrlCTX = context.getParameter(KEY_LOKI_DB_API_ENDPOINT);
 		if (StringUtils.isEmpty(lokiDBApiUrlCTX)) {
-			throw new IllegalArgumentException(KEY_LOKI_DB_API_ENDPOINT + "must not be empty!");
+			throw new IllegalArgumentException(KEY_LOKI_DB_API_ENDPOINT + " must not be empty!");
 		}
 		setLokiApi(lokiDBApiUrlCTX);
 	}

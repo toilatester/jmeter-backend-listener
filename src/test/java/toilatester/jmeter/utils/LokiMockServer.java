@@ -1,62 +1,59 @@
 package toilatester.jmeter.utils;
 
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.containing;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.matching;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 
 public class LokiMockServer {
 	WireMockServer wireMockServer;
+	WireMockConfiguration lokiOptions = options().jettyHeaderBufferSize(16834).asynchronousResponseEnabled(false)
+			.asynchronousResponseThreads(100).jettyAcceptQueueSize(150000);
 
 	public LokiMockServer() {
-		this.wireMockServer = new WireMockServer(wireMockConfig().httpDisabled(false).port(3100));
+		this.wireMockServer = new WireMockServer(lokiOptions.httpDisabled(false).port(3100).httpsPort(3101));
 	}
 
 	public LokiMockServer(boolean enableSsl) {
 		if (enableSsl)
-			this.wireMockServer = new WireMockServer(wireMockConfig().httpsPort(3100));
+			this.wireMockServer = new WireMockServer(lokiOptions.httpsPort(3100));
 		else
-			this.wireMockServer = new WireMockServer(wireMockConfig().httpDisabled(false).port(3100));
+			this.wireMockServer = new WireMockServer(lokiOptions.httpDisabled(false).port(3100));
 
 	}
 
 	public LokiMockServer(String host, int portNumber, boolean enableSsl) {
 		if (enableSsl)
-			this.wireMockServer = new WireMockServer(wireMockConfig().bindAddress(host).httpsPort(3100));
+			this.wireMockServer = new WireMockServer(lokiOptions.bindAddress(host).httpsPort(3100));
 		else
-			this.wireMockServer = new WireMockServer(wireMockConfig().bindAddress(host).port(portNumber).httpDisabled(false));
+			this.wireMockServer = new WireMockServer(
+					lokiOptions.bindAddress(host).port(portNumber).httpDisabled(false));
 	}
 
 	public void startServer() {
 		this.wireMockServer.start();
 	}
-	
+
 	public void stopServer() {
 		this.wireMockServer.stop();
 	}
-	
+
 	public String stubResponseData() {
 		return this.wireMockServer.baseUrl();
 	}
-	
-	public void stubLokiAPI() {
-		this.wireMockServer.stubFor(get(urlPathMatching("/loki/api/v1/*"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("\"testing-library\": \"WireMock\"")));
+
+	public void stubLokiPushLogAPI(String stubLog, int statusCode) {
+		this.wireMockServer.stubFor(
+				post(urlPathMatching("/loki/api/v1/push")).withHeader("Content-Type", equalTo("application/json"))
+						.willReturn(aResponse().withStatus(statusCode).withBody(stubLog)));
+	}
+
+	public WireMockServer getWireMockServer() {
+		return this.wireMockServer;
 	}
 
 }

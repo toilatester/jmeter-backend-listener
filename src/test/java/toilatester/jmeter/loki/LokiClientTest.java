@@ -1,66 +1,178 @@
 package toilatester.jmeter.loki;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutionException;
 
-import org.junit.Rule;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.client.WireMock;
 
-import toilatester.jmeter.config.loki.LokiClientThreadFactory;
+import toilatester.jmeter.BaseTest;
 import toilatester.jmeter.config.loki.LokiDBClient;
+import toilatester.jmeter.config.loki.LokiDBConfig;
 import toilatester.jmeter.config.loki.dto.LokiResponse;
 
-public class LokiClientTest {
-	com.github.tomakehurst.wiremock.client.WireMock wireMockClient = new com.github.tomakehurst.wiremock.client.WireMock();
-	ExecutorService sendLogThreadPool = Executors.newFixedThreadPool(1,
-			new LokiClientThreadFactory("jmeter-send-loki-log"));
-	ExecutorService httpClientThreadPool = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5000 * 10,
-			TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>(),
-			new LokiClientThreadFactory("jmeter-loki-java-http"));
-
-	@Rule
-	public WireMockRule wireMockRule = new WireMockRule(
-			options().port(3111).httpsPort(3112).jettyHeaderBufferSize(16834).asynchronousResponseEnabled(true)
-					.asynchronousResponseThreads(100).jettyAcceptQueueSize(150000));
+public class LokiClientTest extends BaseTest {
 
 	@Test
-	public void testLokiClientCanConnect() throws IOException, InterruptedException {
+	public void testLokiClientCanConnectWithStatus200() throws IOException, InterruptedException {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 200);
 		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
-		LokiDBClient client = new LokiDBClient(sendLogThreadPool, httpClientThreadPool);
-		client.createLokiClient("http://localhost:3111/loki/api/v1/push", 1000, 1000);
+		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 3000, 3000);
 		client.sendAsync("Hello".getBytes()).thenAccept((r) -> {
 			future.complete(r);
 		});
 		future.join();
-		wireMockRule.verify(1, WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		this.lokiMockServer.getWireMockServer().verify(1,
+				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		client.stopLokiClient(1, 1);
 	}
 
-	@BeforeEach
-	public void setUp() {
-		wireMockRule.stubFor(
-				post(urlPathMatching("/loki/api/v1/push")).withHeader("Content-Type", equalTo("application/json"))
-						.willReturn(aResponse().withStatus(200).withBody("Connect")));
-		wireMockRule.start();
+	@Test
+	public void testLokiClientCanConnectWithStatus204() throws IOException, InterruptedException {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
+		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
+		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 3000, 3000);
+		client.sendAsync("Hello".getBytes()).thenAccept((r) -> {
+			future.complete(r);
+		});
+		future.join();
+		this.lokiMockServer.getWireMockServer().verify(1,
+				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		client.stopLokiClient(1, 1);
 	}
 
-	@AfterEach
-	public void tearDown() {
-		wireMockRule.stop();
+	@Test
+	public void testLokiClientSendLogRetrySuccessWithStatus200() {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 200);
+		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
+		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 3000, 3000);
+		client.sendAsyncWithRetry("Hello".getBytes(), 3).thenAccept((r) -> {
+			future.complete(r);
+		});
+		future.join();
+		this.lokiMockServer.getWireMockServer().verify(1,
+				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		client.stopLokiClient(1, 1);
 	}
 
+	@Test
+	public void testLokiClientSendLogRetrySuccessWithStatus204() {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
+		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
+		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 3000, 3000);
+		client.sendAsyncWithRetry("Hello".getBytes(), 3).thenAccept((r) -> {
+			future.complete(r);
+		});
+		future.join();
+		this.lokiMockServer.getWireMockServer().verify(1,
+				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		client.stopLokiClient(1, 1);
+	}
+
+	@Test
+	public void testLokiClientSendLogWithMaxRetry() {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 400);
+		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
+		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 3000, 3000);
+		client.sendAsyncWithRetry("Hello".getBytes(), 3).thenAccept((r) -> {
+			future.complete(r);
+		});
+		future.join();
+		this.lokiMockServer.getWireMockServer().verify(3,
+				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		client.stopLokiClient(1, 1);
+	}
+
+	@Test
+	public void testLokiClientCannotConnectAndReturn400Code()
+			throws IOException, InterruptedException, ExecutionException {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 400);
+		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
+		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 1, 1);
+		client.sendAsync("Hello".getBytes()).thenAccept((r) -> {
+			future.complete(r);
+		});
+		future.join();
+		this.lokiMockServer.getWireMockServer().verify(0,
+				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		Assertions.assertEquals(400, future.get().getStatus());
+		client.stopLokiClient(1, 1);
+	}
+
+	@Test
+	public void testLokiClientCannotConnectAndReturn400CodeWithRetry()
+			throws IOException, InterruptedException, ExecutionException {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 400);
+		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
+		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 1, 1);
+		client.sendAsyncWithRetry("Hello".getBytes(), 3).thenAccept((r) -> {
+			future.complete(r);
+		});
+		future.join();
+		this.lokiMockServer.getWireMockServer().verify(0,
+				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		Assertions.assertEquals(400, future.get().getStatus());
+		client.stopLokiClient(1, 1);
+	}
+
+	@Test
+	public void testLokiClientCantSendWhenStop() throws InterruptedException, ExecutionException {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 400);
+		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
+		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 1, 1);
+		client.stopLokiClient(1, 1);
+		client.sendAsync("Hello".getBytes()).thenAccept((r) -> {
+			future.complete(r);
+		});
+		future.join();
+		this.lokiMockServer.getWireMockServer().verify(0,
+				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		Assertions.assertEquals(400, future.get().getStatus());
+		Assertions.assertEquals("Re-init LokiDBClient, the current thread pool terminated", future.get().getBody());
+		client.stopLokiClient(1, 1);
+	}
+
+	@Test
+	public void testLokiClientCantSendWithRetryWhenStop() throws InterruptedException, ExecutionException {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 400);
+		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
+		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 1, 1);
+		client.stopLokiClient(1, 1);
+		client.sendAsyncWithRetry("Hello".getBytes(), 3).thenAccept((r) -> {
+			future.complete(r);
+		});
+		future.join();
+		this.lokiMockServer.getWireMockServer().verify(0,
+				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		Assertions.assertEquals(400, future.get().getStatus());
+		Assertions.assertEquals("Re-init LokiDBClient, the current thread pool terminated", future.get().getBody());
+		client.stopLokiClient(1, 1);
+	}
+
+	@Test
+	public void testInitLokiClientWithJMeterConfig() throws InterruptedException, ExecutionException {
+		LokiDBConfig lokiDbConfig = this.lokiDbConfig(this.defaultLokiConfig());
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 200);
+		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
+		LokiDBClient client = new LokiDBClient(lokiDbConfig, this.sendLogThreadPool, this.httpClientThreadPool);
+		client.sendAsync("Hello".getBytes()).thenAccept((r) -> {
+			future.complete(r);
+		});
+		future.join();
+		this.lokiMockServer.getWireMockServer().verify(1,
+				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		client.stopLokiClient(1, 1);
+	}
 }
