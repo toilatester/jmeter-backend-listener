@@ -3,7 +3,6 @@ package toilatester.jmeter.utils;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -52,9 +51,9 @@ public class LokiMockServer {
 	}
 
 	public void stubLokiPushLogAPI(String stubLog, int statusCode) {
-		this.wireMockServer.stubFor(
-				post(urlPathMatching("/loki/api/v1/push")).withHeader("Content-Type", equalTo("application/json"))
-						.willReturn(aResponse().withStatus(statusCode).withBody(stubLog)));
+		this.wireMockServer.stubFor(post(WireMock.urlPathEqualTo("/loki/api/v1/push"))
+				.withHeader("Content-Type", equalTo("application/json"))
+				.willReturn(aResponse().withStatus(statusCode).withBody(stubLog)));
 	}
 
 	public WireMockServer getWireMockServer() {
