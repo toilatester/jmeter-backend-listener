@@ -57,14 +57,6 @@ public class LokiMockServer {
 						.willReturn(aResponse().withStatus(statusCode).withBody(stubLog)));
 	}
 
-	public void stubLokiPushThreadMetrics(String stubLog, int statusCode) {
-		this.wireMockServer.stubFor(post(urlPathMatching("/loki/api/v1/push"))
-				.withHeader("Content-Type", equalTo("application/json"))
-				.withRequestBody(
-						WireMock.matchingJsonPath("$.streams[0].stream.jmeter_plugin", WireMock.equalTo("loki-log")))
-				.willReturn(aResponse().withStatus(statusCode).withBody(stubLog)));
-	}
-
 	public WireMockServer getWireMockServer() {
 		return this.wireMockServer;
 	}

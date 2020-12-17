@@ -454,7 +454,6 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	private LokiStreams generateErrorSendingLog(String log) {
 		Map<String, String> labels = new HashMap<>();
 		labels.put("jmeter_plugin", "errors");
-		labels.putAll(defaultLokiLabels);
 		LokiStreams lokiStreams = new LokiStreams();
 		List<LokiStream> lokiStreamList = new ArrayList<>();
 		List<List<String>> listLog = new ArrayList<>();
