@@ -33,7 +33,7 @@ public abstract class BaseTest {
 	public void beforeEach() {
 		this.lokiMockServer = new LokiMockServer();
 		this.lokiMockServer.startServer();
-		this.lokiMockServer.reset();
+		//this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
 		this.sendLogThreadPool = Executors.newFixedThreadPool(1, new LokiClientThreadFactory("jmeter-send-loki-log"));
 		this.httpClientThreadPool = new ThreadPoolExecutor(5, Integer.MAX_VALUE, 60000 * 10, TimeUnit.MILLISECONDS,
 				new SynchronousQueue<Runnable>(), new LokiClientThreadFactory("jmeter-loki-java-http"));
@@ -62,6 +62,31 @@ public abstract class BaseTest {
 		return new BackendListenerContext(params);
 	}
 
+	protected Map<String, String> defaultInfluxDBConfig() {
+		Map<String, String> config = new HashMap<String, String>();
+		return config;
+	}
+
+	protected Map<String, String> lokiConfigWithTurnOffThreadMetrics() {
+		Map<String, String> config = new HashMap<String, String>();
+		config.put(LokiDBConfig.KEY_LOKI_DB_PROTOCOL, LokiDBConfig.DEFAULT_PROTOCOL);
+		config.put(LokiDBConfig.KEY_LOKI_DB_HOST, LokiDBConfig.DEFAULT_HOST);
+		config.put(LokiDBConfig.KEY_LOKI_DB_PORT, Integer.toString(LokiDBConfig.DEFAULT_PORT));
+		config.put(LokiDBConfig.KEY_LOKI_DB_API_ENDPOINT, LokiDBConfig.DEFAUlT_LOKI_API_ENDPOINT);
+		config.put(LokiDBConfig.KEY_LOKI_DB_BATCH_SIZE, Integer.toString(LokiDBConfig.DEFAULT_BATCH_SIZE));
+		config.put(LokiDBConfig.KEY_LOKI_EXTERNAL_LABELS, LokiDBConfig.DEFAUlT_LOKI_EXTERNAL_LABEL);
+		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME,
+				Long.toString(LokiDBConfig.DEFAULT_SEND_BATCH_INTERVAL_TIME));
+		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_THREAD_METRICS_INTERVAL_TIME,
+				Long.toString(30000));
+		config.put(LokiDBConfig.KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED,
+				Boolean.toString(LokiDBConfig.DEFAULT_LOG_RESPONSE_BODY_FAILED_SAMPLER_ONLY));
+		config.put(LokiDBConfig.KEY_LOKI_BATCH_TIMEOUT_MS, Long.toString(LokiDBConfig.DEFAULT_BATCH_TIMEOUT_MS));
+		config.put(LokiDBConfig.KEY_CONNECTION_TIMEOUT_MS, Long.toString(LokiDBConfig.DEFAULT_CONNECTION_TIMEOUT_MS));
+		config.put(LokiDBConfig.KEY_REQUEST_TIMEOUT_MS, Long.toString(LokiDBConfig.DEFAULT_REQUEST_TIMEOUT_MS));
+		return config;
+	}
+	
 	protected Map<String, String> defaultLokiConfig() {
 		Map<String, String> config = new HashMap<String, String>();
 		config.put(LokiDBConfig.KEY_LOKI_DB_PROTOCOL, LokiDBConfig.DEFAULT_PROTOCOL);
@@ -71,7 +96,9 @@ public abstract class BaseTest {
 		config.put(LokiDBConfig.KEY_LOKI_DB_BATCH_SIZE, Integer.toString(LokiDBConfig.DEFAULT_BATCH_SIZE));
 		config.put(LokiDBConfig.KEY_LOKI_EXTERNAL_LABELS, LokiDBConfig.DEFAUlT_LOKI_EXTERNAL_LABEL);
 		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME,
-				Integer.toString(LokiDBConfig.DEFAULT_SEND_BATCH_INTERVAL_TIME));
+				Long.toString(LokiDBConfig.DEFAULT_SEND_BATCH_INTERVAL_TIME));
+		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_THREAD_METRICS_INTERVAL_TIME,
+				Long.toString(LokiDBConfig.DEFAULT_SEND_THREAD_METRICS_INTERVAL_TIME));
 		config.put(LokiDBConfig.KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED,
 				Boolean.toString(LokiDBConfig.DEFAULT_LOG_RESPONSE_BODY_FAILED_SAMPLER_ONLY));
 		config.put(LokiDBConfig.KEY_LOKI_BATCH_TIMEOUT_MS, Long.toString(LokiDBConfig.DEFAULT_BATCH_TIMEOUT_MS));
@@ -79,7 +106,7 @@ public abstract class BaseTest {
 		config.put(LokiDBConfig.KEY_REQUEST_TIMEOUT_MS, Long.toString(LokiDBConfig.DEFAULT_REQUEST_TIMEOUT_MS));
 		return config;
 	}
-	
+
 	protected Map<String, String> lokiConfigWithLogAllResponseData() {
 		Map<String, String> config = new HashMap<String, String>();
 		config.put(LokiDBConfig.KEY_LOKI_DB_PROTOCOL, LokiDBConfig.DEFAULT_PROTOCOL);
@@ -89,9 +116,10 @@ public abstract class BaseTest {
 		config.put(LokiDBConfig.KEY_LOKI_DB_BATCH_SIZE, Integer.toString(LokiDBConfig.DEFAULT_BATCH_SIZE));
 		config.put(LokiDBConfig.KEY_LOKI_EXTERNAL_LABELS, LokiDBConfig.DEFAUlT_LOKI_EXTERNAL_LABEL);
 		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME,
-				Integer.toString(LokiDBConfig.DEFAULT_SEND_BATCH_INTERVAL_TIME));
-		config.put(LokiDBConfig.KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED,
-				Boolean.toString(false));
+				Long.toString(LokiDBConfig.DEFAULT_SEND_BATCH_INTERVAL_TIME));
+		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_THREAD_METRICS_INTERVAL_TIME,
+				Long.toString(LokiDBConfig.DEFAULT_SEND_THREAD_METRICS_INTERVAL_TIME));
+		config.put(LokiDBConfig.KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED, Boolean.toString(false));
 		config.put(LokiDBConfig.KEY_LOKI_BATCH_TIMEOUT_MS, Long.toString(LokiDBConfig.DEFAULT_BATCH_TIMEOUT_MS));
 		config.put(LokiDBConfig.KEY_CONNECTION_TIMEOUT_MS, Long.toString(LokiDBConfig.DEFAULT_CONNECTION_TIMEOUT_MS));
 		config.put(LokiDBConfig.KEY_REQUEST_TIMEOUT_MS, Long.toString(LokiDBConfig.DEFAULT_REQUEST_TIMEOUT_MS));
@@ -108,7 +136,9 @@ public abstract class BaseTest {
 		config.put(LokiDBConfig.KEY_LOKI_EXTERNAL_LABELS,
 				"toilatester=external-labels,toi la tester with space=external-labels");
 		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME,
-				Integer.toString(LokiDBConfig.DEFAULT_SEND_BATCH_INTERVAL_TIME));
+				Long.toString(LokiDBConfig.DEFAULT_SEND_BATCH_INTERVAL_TIME));
+		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_THREAD_METRICS_INTERVAL_TIME,
+				Long.toString(LokiDBConfig.DEFAULT_SEND_THREAD_METRICS_INTERVAL_TIME));
 		config.put(LokiDBConfig.KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED,
 				Boolean.toString(LokiDBConfig.DEFAULT_LOG_RESPONSE_BODY_FAILED_SAMPLER_ONLY));
 		config.put(LokiDBConfig.KEY_LOKI_BATCH_TIMEOUT_MS, Long.toString(LokiDBConfig.DEFAULT_BATCH_TIMEOUT_MS));

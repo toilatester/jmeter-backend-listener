@@ -51,7 +51,7 @@ public class LokiMockServer {
 	}
 
 	public void stubLokiPushLogAPI(String stubLog, int statusCode) {
-		this.wireMockServer.stubFor(post(WireMock.urlEqualTo("/loki/api/v1/push"))
+		this.wireMockServer.stubFor(post(WireMock.urlPathEqualTo("/loki/api/v1/push"))
 				.withHeader("Content-Type", equalTo("application/json"))
 				.willReturn(aResponse().withStatus(statusCode).withBody(stubLog)));
 	}

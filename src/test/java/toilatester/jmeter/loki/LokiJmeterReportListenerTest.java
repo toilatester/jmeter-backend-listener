@@ -31,6 +31,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 
 	@Test
 	public void testCanStartJMeterWithValidConfigListener() throws Exception {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
 		URL url = Resources.getResource("jmeter.properties");
 		Path path = Paths.get(url.toURI());
 		JMeterUtils.getProperties(path.toString());
@@ -43,6 +44,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 
 	@Test
 	public void testCanStartJMeterWithDefaultArgumentsConfigListener() throws Exception {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
 		URL url = Resources.getResource("jmeter.properties");
 		Path path = Paths.get(url.toURI());
 		JMeterUtils.getProperties(path.toString());
@@ -55,6 +57,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 
 	@Test
 	public void testCannotStartJMeterWithInvalidConfigListener() throws Exception {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
 		URL url = Resources.getResource("jmeter.properties");
 		Path path = Paths.get(url.toURI());
 		JMeterUtils.getProperties(path.toString());

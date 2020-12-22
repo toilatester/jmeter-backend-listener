@@ -334,6 +334,8 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_EXTERNAL_LABELS, LokiDBConfig.DEFAUlT_LOKI_EXTERNAL_LABEL);
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME,
 				Integer.toString(LokiDBConfig.DEFAULT_SEND_BATCH_INTERVAL_TIME));
+		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_SEND_THREAD_METRICS_INTERVAL_TIME,
+				Integer.toString(LokiDBConfig.DEFAULT_SEND_THREAD_METRICS_INTERVAL_TIME));
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED,
 				Boolean.toString(LokiDBConfig.DEFAULT_LOG_RESPONSE_BODY_FAILED_SAMPLER_ONLY));
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_BATCH_TIMEOUT_MS,
