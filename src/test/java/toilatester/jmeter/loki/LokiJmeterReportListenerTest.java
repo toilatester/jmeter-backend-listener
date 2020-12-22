@@ -38,6 +38,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.defaultLokiConfig()));
 		Assertions.assertNotEquals(0, JMeterContextService.getTestStartTime());
+		listener.teardownTest(this.backendListenerContext(this.defaultLokiConfig()));
 	}
 
 	@Test
@@ -49,6 +50,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(new BackendListenerContext(listener.getDefaultParameters()));
 		Assertions.assertNotEquals(0, JMeterContextService.getTestStartTime());
+		listener.teardownTest(this.backendListenerContext(this.defaultLokiConfig()));
 	}
 
 	@Test
@@ -64,6 +66,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 		Assertions.assertEquals(0, JMeterContextService.getTestStartTime());
 	}
 
+	
 	@Test
 	public void testCanSendLogJMeterWithValidConfigListener() throws Exception {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
@@ -81,6 +84,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
 		Assertions.assertEquals("loki-log", streams.getStreams().get(0).getStream().get("jmeter_plugin"));
 		Assertions.assertEquals("thread-metrics", streams.getStreams().get(0).getStream().get("jmeter_plugin_metrics"));
+		listener.teardownTest(this.backendListenerContext(this.defaultLokiConfig()));
 	}
 	
 	@Test
@@ -100,8 +104,8 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
 		Assertions.assertEquals("loki-log", streams.getStreams().get(0).getStream().get("jmeter_plugin"));
 		Assertions.assertEquals("thread-metrics", streams.getStreams().get(0).getStream().get("jmeter_plugin_metrics"));
+		listener.teardownTest(this.backendListenerContext(this.defaultLokiConfig()));
 	}
-
 
 	@Test
 	public void testCanSendLogJMeterWithExternalLabelsConfigListener() throws Exception {
@@ -122,8 +126,8 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 		Assertions.assertEquals("thread-metrics", streams.getStreams().get(0).getStream().get("jmeter_plugin_metrics"));
 		Assertions.assertEquals("external-labels", streams.getStreams().get(0).getStream().get("toilatesterwithspace"));
 		Assertions.assertEquals("external-labels", streams.getStreams().get(0).getStream().get("toilatester"));
+		listener.teardownTest(this.backendListenerContext(this.defaultLokiConfig()));
 	}
-
 
 	@Test
 	public void testSendLokiLogInHandlerSampler() throws Exception {
@@ -145,6 +149,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 			return lokiLabel != null && lokiLabel.contains("response-data");
 		});
 		Assertions.assertEquals(true, recieveRequest);
+		listener.teardownTest(this.backendListenerContext(this.defaultLokiConfig()));
 	}
 	
 	@Test
@@ -167,6 +172,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 			return lokiLabel != null && lokiLabel.contains("response-data");
 		});
 		Assertions.assertEquals(true, recieveRequest);
+		listener.teardownTest(this.backendListenerContext(this.defaultLokiConfig()));
 	}
 	
 	@Test
@@ -189,6 +195,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 			return lokiLabel != null && lokiLabel.contains("response-data");
 		});
 		Assertions.assertEquals(true, recieveRequest);
+		listener.teardownTest(this.backendListenerContext(this.defaultLokiConfig()));
 	}
 
 	@Test
@@ -238,6 +245,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 			return lokiLabel != null && lokiLabel.contains("errors");
 		});
 		Assertions.assertEquals(true, recieveRequest);
+		listener.teardownTest(this.backendListenerContext(this.defaultLokiConfig()));
 	}
 
 	private BiFunction<RequestPatternBuilder, Integer, List<LoggedRequest>> waitToReceiveData = (pattern, retry) -> {

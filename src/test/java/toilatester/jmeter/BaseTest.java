@@ -9,9 +9,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -31,14 +29,10 @@ public abstract class BaseTest {
 	protected ExecutorService sendLogThreadPool;
 	protected ExecutorService httpClientThreadPool;
 
-	@BeforeAll
-	public void setUpSuite() {
-		this.lokiMockServer = new LokiMockServer();
-		this.lokiMockServer.startServer();
-	}
-
 	@BeforeEach
 	public void beforeEach() {
+		this.lokiMockServer = new LokiMockServer();
+		this.lokiMockServer.startServer();
 		this.lokiMockServer.reset();
 		this.sendLogThreadPool = Executors.newFixedThreadPool(1, new LokiClientThreadFactory("jmeter-send-loki-log"));
 		this.httpClientThreadPool = new ThreadPoolExecutor(5, Integer.MAX_VALUE, 60000 * 10, TimeUnit.MILLISECONDS,
@@ -48,10 +42,6 @@ public abstract class BaseTest {
 	@AfterEach
 	public void afterEach() {
 		this.lokiMockServer.reset();
-	}
-
-	@AfterAll
-	public void cleanSuite() {
 		this.lokiMockServer.stopServer();
 	}
 
