@@ -19,6 +19,7 @@ public class InfluxDBJmeterReportListenerTest extends BaseTest {
 
 	@Test
 	public void testCanStartJMeterWithDefaultArgumentsConfigListener() throws Exception {
+		this.influxDBMockServer.stubLokiPushLogAPI("Hello", 200);
 		URL url = Resources.getResource("jmeter.properties");
 		Path path = Paths.get(url.toURI());
 		JMeterUtils.getProperties(path.toString());

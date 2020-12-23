@@ -20,20 +20,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import toilatester.jmeter.config.influxdb.InfluxDBConfig;
 import toilatester.jmeter.config.loki.LokiClientThreadFactory;
 import toilatester.jmeter.config.loki.LokiDBConfig;
+import toilatester.jmeter.utils.InfluxDBMockServer;
 import toilatester.jmeter.utils.LokiMockServer;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public abstract class BaseTest {
 
 	protected LokiMockServer lokiMockServer;
-
+	protected InfluxDBMockServer influxDBMockServer;
+	
 	protected ExecutorService sendLogThreadPool;
 	protected ExecutorService httpClientThreadPool;
 
 	@BeforeEach
 	public void beforeEach() {
+		this.influxDBMockServer = new InfluxDBMockServer();
 		this.lokiMockServer = new LokiMockServer();
 		this.lokiMockServer.startServer();
+		this.influxDBMockServer.startServer();
 		this.sendLogThreadPool = Executors.newFixedThreadPool(1, new LokiClientThreadFactory("jmeter-send-loki-log"));
 		this.httpClientThreadPool = new ThreadPoolExecutor(5, Integer.MAX_VALUE, 60000 * 10, TimeUnit.MILLISECONDS,
 				new SynchronousQueue<Runnable>(), new LokiClientThreadFactory("jmeter-loki-java-http"));
@@ -42,7 +46,9 @@ public abstract class BaseTest {
 	@AfterEach
 	public void afterEach() {
 		this.lokiMockServer.reset();
+		this.influxDBMockServer.reset();
 		this.lokiMockServer.stopServer();
+		this.influxDBMockServer.stopServer();
 	}
 
 	protected String getLokiHttpMockServerUrl() {
