@@ -52,9 +52,9 @@ public class LokiDBClient {
 
 	public void stopLokiClient(long clientThreadPoolTimeout, long sendLogThreadPoolTimeout) {
 		this.httpClientThreadPool.shutdown();
-		this.waitForTerminateThreadPool(this.httpClientThreadPool,clientThreadPoolTimeout, "java http client");
+		this.waitForTerminateThreadPool(this.httpClientThreadPool, clientThreadPoolTimeout, "java http client");
 		this.sendLogThreadPool.shutdown();
-		this.waitForTerminateThreadPool(this.sendLogThreadPool,sendLogThreadPoolTimeout, "send log");
+		this.waitForTerminateThreadPool(this.sendLogThreadPool, sendLogThreadPoolTimeout, "send log");
 	}
 
 	private void waitForTerminateThreadPool(ExecutorService threadPool, long timeout, String threadPoolServiceName) {
@@ -67,8 +67,8 @@ public class LokiDBClient {
 			}
 
 		} catch (InterruptedException e) {
-			LOGGER.info(String.format("Error while wait for all %s thread pool completed: %s",
-					threadPoolServiceName, e.getCause().toString()));
+			LOGGER.info(String.format("Error while wait for all %s thread pool completed: %s", threadPoolServiceName,
+					e.getCause().toString()));
 			sendLogThreadPool.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
@@ -112,11 +112,12 @@ public class LokiDBClient {
 					int statusCode = response.statusCode();
 					if (204 >= statusCode && 200 <= statusCode) {
 						return new LokiResponse(response.statusCode(), response.body());
+					} else {
+						LOGGER.error(String.format("Error while sending batch to Loki %s. Trying to resend %d",
+								response.body(), retryNumber));
+						lokiResponse.setStatus(response.statusCode());
+						lokiResponse.setBody(response.body());
 					}
-					LOGGER.error(String.format("Error while sending batch to Loki %s. Trying to resend %d",
-							response.body(), retryNumber));
-					lokiResponse.setStatus(response.statusCode());
-					lokiResponse.setBody(response.body());
 				} catch (Exception innerException) {
 					String[] stackTrace = ExceptionUtils.getRootCauseStackTrace(innerException.getCause());
 					String errorMessage = String.format("Error: %s \n%s", innerException.getMessage(),
