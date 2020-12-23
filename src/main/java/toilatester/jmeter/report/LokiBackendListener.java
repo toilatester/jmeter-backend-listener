@@ -27,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
 import toilatester.jmeter.config.loki.LogLevel;
@@ -38,6 +37,7 @@ import toilatester.jmeter.config.loki.dto.LokiLog;
 import toilatester.jmeter.config.loki.dto.LokiResponse;
 import toilatester.jmeter.config.loki.dto.LokiStream;
 import toilatester.jmeter.config.loki.dto.LokiStreams;
+import toilatester.jmeter.report.exception.ReportException;
 
 public class LokiBackendListener extends AbstractBackendListenerClient implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LokiBackendListener.class);
@@ -58,7 +58,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 
 	private LinkedBlockingQueue<LokiLog> lokiResponseDataLogQueue = new LinkedBlockingQueue<LokiLog>();
 
-	private ObjectMapper mapper = new ObjectMapper();
+	private boolean forceToSendRemainsLog = false;
 
 	@SuppressWarnings("serial")
 	private Map<String, String> lokiReponseHeaderLabels = new HashMap<>() {
@@ -104,7 +104,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 				addThreadMetricDataSchedulerSession.cancel(true);
 			addThreadMetricDataScheduler.shutdown();
 			JMeterContextService.endTest();
-			throw e;
+			throw new ReportException(e.getMessage());
 		}
 	}
 
@@ -215,7 +215,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	private void sendThreadMetricsLog() {
 		try {
 			LokiStreams lokiStreams = this.generateThreadMetricLog();
-			String requestJSON = mapper.writeValueAsString(lokiStreams);
+			String requestJSON = lokiStreams.toJsonString();
 			LOGGER.debug("Loki Request Payload: " + requestJSON);
 			this.lokiClient.sendAsyncWithRetry(requestJSON.getBytes(), 3)
 					.thenAccept(this.lokiThreadMetricsResponseHandler);
@@ -277,7 +277,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 			lokiStream.setValues(generateTearDownTestLog());
 			lokiStreamList.add(lokiStream);
 			lokiStreams.setStreams(lokiStreamList);
-			String requestJSON = mapper.writeValueAsString(lokiStreams);
+			String requestJSON = lokiStreams.toJsonString();
 			return this.lokiClient.sendAsync(requestJSON.getBytes());
 		} catch (JsonProcessingException e) {
 			LOGGER.error("Error JSON Convert: " + e.getMessage());
@@ -337,6 +337,8 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_EXTERNAL_LABELS, LokiDBConfig.DEFAUlT_LOKI_EXTERNAL_LABEL);
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME,
 				Integer.toString(LokiDBConfig.DEFAULT_SEND_BATCH_INTERVAL_TIME));
+		arguments.addArgument(LokiDBConfig.KEY_LOKI_DB_SEND_THREAD_METRICS_INTERVAL_TIME,
+				Integer.toString(LokiDBConfig.DEFAULT_SEND_THREAD_METRICS_INTERVAL_TIME));
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED,
 				Boolean.toString(LokiDBConfig.DEFAULT_LOG_RESPONSE_BODY_FAILED_SAMPLER_ONLY));
 		arguments.addArgument(LokiDBConfig.KEY_LOKI_BATCH_TIMEOUT_MS,
@@ -368,6 +370,23 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	}
 
 	private void addLogToBatchJob(List<List<String>> listLog) {
+		if (this.forceToSendRemainsLog) {
+			addLogItemWhenForceToFinishingTest(listLog);
+		} else {
+			addLogItemInScheduler(listLog);
+		}
+	}
+
+	private void addLogItemWhenForceToFinishingTest(List<List<String>> listLog) {
+		while (this.lokiResponseDataLogQueue.size() > 0) {
+			LokiLog lokiLog = this.lokiResponseDataLogQueue.poll();
+			if (lokiLog == null)
+				break;
+			listLog.add(lokiLog.getLogObject());
+		}
+	}
+
+	private void addLogItemInScheduler(List<List<String>> listLog) {
 		int currentBatchSize = 0;
 		while (currentBatchSize < this.lokiDBConfig.getLokibBatchSize()) {
 			LokiLog lokiLog = this.lokiResponseDataLogQueue.poll();
@@ -390,7 +409,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 				lokiStream.setValues(listLogPartition);
 				lokiStreamList.add(lokiStream);
 				lokiStreams.setStreams(lokiStreamList);
-				String requestJSON = mapper.writeValueAsString(lokiStreams);
+				String requestJSON = lokiStreams.toJsonString();
 				LOGGER.debug("Loki Request Payload: " + requestJSON);
 				this.lokiClient.sendAsyncWithRetry(requestJSON.getBytes(), 3)
 						.thenAccept(this.lokiReponseDataResponseHandler);
@@ -445,7 +464,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	private CompletableFuture<LokiResponse> sendErrorLog(String log) {
 		try {
 			LokiStreams lokiStreams = this.generateErrorSendingLog(log);
-			String requestJSON = mapper.writeValueAsString(lokiStreams);
+			String requestJSON = lokiStreams.toJsonString();
 			LOGGER.debug("Loki Request Payload: " + requestJSON);
 			return this.lokiClient.sendAsyncWithRetry(requestJSON.getBytes(), 3);
 		} catch (JsonProcessingException e) {
@@ -457,7 +476,6 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	private LokiStreams generateErrorSendingLog(String log) {
 		Map<String, String> labels = new HashMap<>();
 		labels.put("jmeter_plugin", "errors");
-		labels.putAll(defaultLokiLabels);
 		LokiStreams lokiStreams = new LokiStreams();
 		List<LokiStream> lokiStreamList = new ArrayList<>();
 		List<List<String>> listLog = new ArrayList<>();
@@ -471,11 +489,12 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	}
 
 	private void forceToSendRemainsLog() {
-		LOGGER.info("Force to send all remain loki log");
+		LOGGER.warn("Force to send all remain loki log");
 		Map<String, String> labels = new HashMap<>();
 		labels.put("jmeter_data", "response-data");
 		labels.putAll(defaultLokiLabels);
 		List<List<String>> listLog = new ArrayList<>();
+		forceToSendRemainsLog = true;
 		addLogToBatchJob(listLog);
 		synchronized (LOCK) {
 			this.sendLog(listLog, labels);

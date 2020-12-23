@@ -14,6 +14,7 @@ public class LokiDBConfig {
 	public static final String DEFAUlT_LOKI_EXTERNAL_LABEL = "jmeter_plugin=loki-log";
 	public static final int DEFAULT_BATCH_SIZE = 100;
 	public static final int DEFAULT_SEND_BATCH_INTERVAL_TIME = 1000;
+	public static final int DEFAULT_SEND_THREAD_METRICS_INTERVAL_TIME = 3000;
 	public static final long DEFAULT_BATCH_TIMEOUT_MS = 60 * 1000;
 	public static final long DEFAULT_CONNECTION_TIMEOUT_MS = 30 * 1000;
 	public static final long DEFAULT_REQUEST_TIMEOUT_MS = 30 * 1000;
@@ -25,6 +26,7 @@ public class LokiDBConfig {
 	public static final String KEY_LOKI_DB_API_ENDPOINT = "lokiApiEndPoint";
 	public static final String KEY_LOKI_DB_BATCH_SIZE = "lokiBatchSize";
 	public static final String KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME = "lokiSendBatchIntervalTime";
+	public static final String KEY_LOKI_DB_SEND_THREAD_METRICS_INTERVAL_TIME = "lokiSendThreadMetricsIntervalTime";
 	public static final String KEY_LOKI_BATCH_TIMEOUT_MS = "lokiBatchTimeout";
 	public static final String KEY_CONNECTION_TIMEOUT_MS = "lokiConnectionTimeout";
 	public static final String KEY_REQUEST_TIMEOUT_MS = "lokiRequestTimeout";
@@ -37,6 +39,7 @@ public class LokiDBConfig {
 	private String lokiApi;
 	private int lokibBatchSize;
 	private long lokiSendBatchIntervalTime;
+	private long lokiSendThreadMetricsIntervalTime;
 	private long lokiBatchTimeout;
 	private long lokiConnectiontimeout;
 	private long lokiRequestTimeout;
@@ -110,7 +113,7 @@ public class LokiDBConfig {
 	private void initLokiDBProtocolCTX(BackendListenerContext context) {
 		String lokiDBProtocolCTX = context.getParameter(KEY_LOKI_DB_PROTOCOL);
 		if (StringUtils.isEmpty(lokiDBProtocolCTX)) {
-			throw new IllegalArgumentException(KEY_LOKI_DB_PROTOCOL + "must not be empty!");
+			throw new IllegalArgumentException(KEY_LOKI_DB_PROTOCOL + " must not be empty!");
 		}
 		setLokiProtocol(lokiDBProtocolCTX);
 	}
@@ -118,7 +121,7 @@ public class LokiDBConfig {
 	private void initLokiDBHostCTX(BackendListenerContext context) {
 		String lokiDBHostCTX = context.getParameter(KEY_LOKI_DB_HOST);
 		if (StringUtils.isEmpty(lokiDBHostCTX)) {
-			throw new IllegalArgumentException(KEY_LOKI_DB_HOST + "must not be empty!");
+			throw new IllegalArgumentException(KEY_LOKI_DB_HOST + " must not be empty!");
 		}
 		setLokiHost(lokiDBHostCTX);
 	}
@@ -131,7 +134,7 @@ public class LokiDBConfig {
 	private void initLokiDBApiUrlCTX(BackendListenerContext context) {
 		String lokiDBApiUrlCTX = context.getParameter(KEY_LOKI_DB_API_ENDPOINT);
 		if (StringUtils.isEmpty(lokiDBApiUrlCTX)) {
-			throw new IllegalArgumentException(KEY_LOKI_DB_API_ENDPOINT + "must not be empty!");
+			throw new IllegalArgumentException(KEY_LOKI_DB_API_ENDPOINT + " must not be empty!");
 		}
 		setLokiApi(lokiDBApiUrlCTX);
 	}
@@ -141,6 +144,7 @@ public class LokiDBConfig {
 		long lokiRequestTimeout = context.getLongParameter(KEY_REQUEST_TIMEOUT_MS);
 		int lokiBatchSize = context.getIntParameter(KEY_LOKI_DB_BATCH_SIZE);
 		long lokiSendBatchIntervalTime = context.getIntParameter(KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME);
+		long lokiSendThreadMetricsIntervalTime = context.getIntParameter(KEY_LOKI_DB_SEND_THREAD_METRICS_INTERVAL_TIME);
 		long lokiBatchTimeout = context.getLongParameter(KEY_LOKI_BATCH_TIMEOUT_MS);
 		boolean lokiLogResponseBodyFailedSamplerOnly = context.getBooleanParameter(
 				KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED, DEFAULT_LOG_RESPONSE_BODY_FAILED_SAMPLER_ONLY);
@@ -148,6 +152,7 @@ public class LokiDBConfig {
 		setLokiRequestTimeout(lokiRequestTimeout);
 		setLokibBatchSize(lokiBatchSize);
 		setLokiSendBatchIntervalTime(lokiSendBatchIntervalTime);
+		setLokiSendThreadMetricsIntervalTime(lokiSendThreadMetricsIntervalTime);
 		setLokiBatchTimeout(lokiBatchTimeout);
 		setLokiExternalLabels(this.parsingExternalLabels(context.getParameter(KEY_LOKI_EXTERNAL_LABELS)));
 		setLokiLogResponseBodyFailedSamplerOnly(lokiLogResponseBodyFailedSamplerOnly);
@@ -160,8 +165,8 @@ public class LokiDBConfig {
 		String[] listlabels = rawExternalLabel.split(DEFAULT_DELIMITER_CHAR);
 		for (String label : listlabels) {
 			String[] labelValue = label.split("=");
-			// if (labelValue.length > 0)
-			externalLokiLabels.put(labelValue[0], labelValue[1]);
+			if (labelValue.length > 0)
+				externalLokiLabels.put(labelValue[0], labelValue[1]);
 		}
 		return externalLokiLabels;
 	}
@@ -200,6 +205,14 @@ public class LokiDBConfig {
 
 	public void setLokiLogResponseBodyFailedSamplerOnly(boolean lokiLogResponseBodyFailedSamplerOnly) {
 		this.lokiLogResponseBodyFailedSamplerOnly = lokiLogResponseBodyFailedSamplerOnly;
+	}
+
+	public long getLokiSendThreadMetricsIntervalTime() {
+		return lokiSendThreadMetricsIntervalTime;
+	}
+
+	public void setLokiSendThreadMetricsIntervalTime(long lokiSendThreadMetricsIntervalTime) {
+		this.lokiSendThreadMetricsIntervalTime = lokiSendThreadMetricsIntervalTime;
 	}
 
 }

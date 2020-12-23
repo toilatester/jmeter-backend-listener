@@ -10,14 +10,6 @@ public enum LogLevel {
 		this.logLevel = logLevel;
 	}
 
-	public static LogLevel getLogLevelByString(String logLevel) {
-		for (LogLevel level : LogLevel.values()) {
-			if (level.logLevel.equals(logLevel))
-				return level;
-		}
-		throw new EnumConstantNotPresentException(LogLevel.class, logLevel);
-	}
-
 	public String value() {
 		return this.logLevel;
 	}

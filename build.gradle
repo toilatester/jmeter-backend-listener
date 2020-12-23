@@ -1,5 +1,6 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
+apply plugin: 'jacoco'
 
 sourceCompatibility = 11
 
@@ -33,7 +34,27 @@ dependencies {
 	compileOnly group: 'org.apache.jmeter', name: 'ApacheJMeter_components', version: '5.4'
 	compile group: 'org.influxdb', name: 'influxdb-java', version: '2.4'
 	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.11'
+	compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+	compile group: 'com.google.guava', name: 'guava', version: '30.0-jre'
 	compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.0'
+	testImplementation group: 'org.junit.jupiter', name:'junit-jupiter', version:'5.7.0'
+	testRuntime group: 'org.junit.jupiter', name:'junit-jupiter-engine', version :'5.7.0'
+	testCompile group: "com.github.tomakehurst",name :"wiremock-jre8", version:"2.27.2"
+	testCompile group: 'org.apache.jmeter', name: 'ApacheJMeter_core', version: '5.4'
+	testCompile group: 'org.apache.jmeter', name: 'ApacheJMeter_components', version: '5.4'
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
 }
 
 //create a single Jar with all dependencies
@@ -54,7 +75,7 @@ task copyTask(type: Copy) {
 
 task copyTaskToJmeterDebug(type: Copy){
  	def jmeterPath = System.env.JMETER_HOME
- 	def fileLibDebugPath = jmeterPath + "/lib/ext/" + "jmeter-backend-listener-plugin-" + version + ".jar"
+ 	def fileLibDebugPath = jmeterPath + "/lib/ext/" + "jmeter-backend-listener-plugin" + ".jar"
  	boolean fileSuccessfullyDeleted = new File(fileLibDebugPath).delete() 
  	println "Clean old lib successfully: " + fileSuccessfullyDeleted
  	from 'build/libs/.'
@@ -81,7 +102,6 @@ task releasePlugin{
 }
 
 task releaseHotDebug{
-    dependsOn 'clean'
     dependsOn 'fatJar'
     dependsOn 'copyTaskToJmeterDebug'
     tasks.findByName('fatJar').mustRunAfter 'clean'

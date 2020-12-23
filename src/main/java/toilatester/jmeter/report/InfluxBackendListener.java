@@ -44,16 +44,6 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(InfluxBackendListener.class);
 
-	private static final String KEY_USE_REGEX_FOR_SAMPLER_LIST = "useRegexForSamplerList";
-
-	private static final String KEY_TEST_NAME = "testName";
-
-	private static final String KEY_NODE_NAME = "nodeName";
-
-	private static final String KEY_SAMPLERS_LIST = "samplersList";
-
-	private static final String KEY_RECORD_SUB_SAMPLES = "recordSubSamples";
-
 	private static final String SEPARATOR = ";";
 
 	private static final int ONE_MS_IN_NANOSECONDS = 1000000;
@@ -183,8 +173,8 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	@Override
 	public Arguments getDefaultParameters() {
 		Arguments arguments = new Arguments();
-		arguments.addArgument(KEY_TEST_NAME, "Test");
-		arguments.addArgument(KEY_NODE_NAME, "Test-Node");
+		arguments.addArgument(InfluxDBConfig.KEY_TEST_NAME, "Test");
+		arguments.addArgument(InfluxDBConfig.KEY_NODE_NAME, "Test-Node");
 		arguments.addArgument(InfluxDBConfig.KEY_INFLUX_DB_PROTOCOL, InfluxDBConfig.DEFAULT_PROTOCOL);
 		arguments.addArgument(InfluxDBConfig.KEY_INFLUX_DB_HOST, InfluxDBConfig.DEFAULT_HOST);
 		arguments.addArgument(InfluxDBConfig.KEY_INFLUX_DB_PORT, Integer.toString(InfluxDBConfig.DEFAULT_PORT));
@@ -192,9 +182,9 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 		arguments.addArgument(InfluxDBConfig.KEY_INFLUX_DB_PASSWORD, "");
 		arguments.addArgument(InfluxDBConfig.KEY_INFLUX_DB_DATABASE, InfluxDBConfig.DEFAULT_DATABASE);
 		arguments.addArgument(InfluxDBConfig.KEY_RETENTION_POLICY, InfluxDBConfig.DEFAULT_RETENTION_POLICY);
-		arguments.addArgument(KEY_SAMPLERS_LIST, ".*");
-		arguments.addArgument(KEY_USE_REGEX_FOR_SAMPLER_LIST, "true");
-		arguments.addArgument(KEY_RECORD_SUB_SAMPLES, "true");
+		arguments.addArgument(InfluxDBConfig.KEY_SAMPLERS_LIST, ".*");
+		arguments.addArgument(InfluxDBConfig.KEY_USE_REGEX_FOR_SAMPLER_LIST, "true");
+		arguments.addArgument(InfluxDBConfig.KEY_RECORD_SUB_SAMPLES, "true");
 		return arguments;
 	}
 
@@ -202,9 +192,9 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	public void setupTest(BackendListenerContext context) throws Exception {
 		super.setupTest(context);
 		try {
-			testName = context.getParameter(KEY_TEST_NAME, "Test");
+			testName = context.getParameter(InfluxDBConfig.KEY_TEST_NAME, "Test");
 			randomNumberGenerator = new Random();
-			nodeName = context.getParameter(KEY_NODE_NAME, "Test-Node");
+			nodeName = context.getParameter(InfluxDBConfig.KEY_NODE_NAME, "Test-Node");
 
 			setupInfluxClient(context);
 			influxDB.write(influxDBConfig.getInfluxDatabase(), influxDBConfig.getInfluxRetentionPolicy(),
@@ -220,11 +210,12 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 			scheduler.scheduleAtFixedRate(this, 1, 1, TimeUnit.SECONDS);
 
 			// Indicates whether to write sub sample records to the database
-			recordSubSamples = Boolean.parseBoolean(context.getParameter(KEY_RECORD_SUB_SAMPLES, "false"));
+			recordSubSamples = Boolean
+					.parseBoolean(context.getParameter(InfluxDBConfig.KEY_RECORD_SUB_SAMPLES, "false"));
 		} catch (Exception e) {
 			LOGGER.error(String.format("Error in set up test %s", e.getMessage()));
 			JMeterContextService.endTest();
-			throw e;
+			throw new ReportException(e.getMessage());
 		}
 	}
 
@@ -295,9 +286,9 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	 * @param context {@link BackendListenerContext}.
 	 */
 	private void parseSamplers(BackendListenerContext context) {
-		String samplersList = context.getParameter(KEY_SAMPLERS_LIST, "");
+		String samplersList = context.getParameter(InfluxDBConfig.KEY_SAMPLERS_LIST, "");
 		samplersToFilter = new HashSet<>();
-		if (context.getBooleanParameter(KEY_USE_REGEX_FOR_SAMPLER_LIST, false)) {
+		if (context.getBooleanParameter(InfluxDBConfig.KEY_USE_REGEX_FOR_SAMPLER_LIST, false)) {
 			regexForSamplerList = samplersList;
 		} else {
 			regexForSamplerList = null;
