@@ -28,7 +28,7 @@ public abstract class BaseTest {
 
 	protected LokiMockServer lokiMockServer;
 	protected InfluxDBMockServer influxDBMockServer;
-	
+
 	protected ExecutorService sendLogThreadPool;
 	protected ExecutorService httpClientThreadPool;
 
@@ -95,8 +95,7 @@ public abstract class BaseTest {
 		config.put(LokiDBConfig.KEY_LOKI_EXTERNAL_LABELS, LokiDBConfig.DEFAUlT_LOKI_EXTERNAL_LABEL);
 		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME,
 				Long.toString(LokiDBConfig.DEFAULT_SEND_BATCH_INTERVAL_TIME));
-		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_THREAD_METRICS_INTERVAL_TIME,
-				Long.toString(30000));
+		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_THREAD_METRICS_INTERVAL_TIME, Long.toString(30000));
 		config.put(LokiDBConfig.KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED,
 				Boolean.toString(LokiDBConfig.DEFAULT_LOG_RESPONSE_BODY_FAILED_SAMPLER_ONLY));
 		config.put(LokiDBConfig.KEY_LOKI_BATCH_TIMEOUT_MS, Long.toString(LokiDBConfig.DEFAULT_BATCH_TIMEOUT_MS));
@@ -104,7 +103,7 @@ public abstract class BaseTest {
 		config.put(LokiDBConfig.KEY_REQUEST_TIMEOUT_MS, Long.toString(LokiDBConfig.DEFAULT_REQUEST_TIMEOUT_MS));
 		return config;
 	}
-	
+
 	protected Map<String, String> defaultLokiConfig() {
 		Map<String, String> config = new HashMap<String, String>();
 		config.put(LokiDBConfig.KEY_LOKI_DB_PROTOCOL, LokiDBConfig.DEFAULT_PROTOCOL);

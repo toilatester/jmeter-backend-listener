@@ -46,21 +46,31 @@ public class InfluxDBMockServer {
 		this.wireMockServer.resetAll();
 	}
 
-	public String stubResponseData() {
-		return this.wireMockServer.baseUrl();
+	public void stubInfluxWriteDataToDatabaseAPI(int statusCode, String responseData) {
+		this.wireMockServer.stubFor(post(WireMock.urlPathEqualTo("/write"))
+				.withQueryParam("u", WireMock.equalTo("default")).withQueryParam("p", WireMock.equalTo("default"))
+				.withQueryParam("db", WireMock.equalTo("jmeter")).withQueryParam("rp", WireMock.equalTo("autogen"))
+				.withQueryParam("precision", WireMock.equalTo("n"))
+				.withQueryParam("consistency", WireMock.equalTo("one"))
+				.willReturn(aResponse().withStatus(statusCode).withBody(responseData)));
 	}
 
-	public void stubLokiPushLogAPI(String stubLog, int statusCode) {
-		this.wireMockServer
-				.stubFor(post(WireMock.anyUrl()).willReturn(aResponse().withStatus(statusCode).withBody(stubLog)));
-		this.wireMockServer
-				.stubFor(get(WireMock.urlPathEqualTo("/ping")).willReturn(aResponse().withStatus(204).withBody(
-						"{\"results\":[{ \"series\": [ { \"name\": \"databases\", \"columns\": [ \"name\" ], \"values\": [ [ \"jmeter\" ], [ \"_internal\" ], [ \"telegraf\" ], [ \"pirates\" ] ] } ] } ] }")));
+	public void stubInfluxPingAPI(int statusCode) {
+		this.wireMockServer.stubFor(get(WireMock.urlPathEqualTo("/ping")).willReturn(aResponse().withStatus(204)));
+	}
+
+	public void stubInfluxGetQueryAPI(int statusCode, String queryData, String responseData) {
 		this.wireMockServer.stubFor(get(WireMock.urlPathEqualTo("/query"))
 				.withQueryParam("u", WireMock.equalTo("default")).withQueryParam("p", WireMock.equalTo("default"))
-				.withQueryParam("q", WireMock.equalTo("SHOW DATABASES"))
-				.willReturn(aResponse().withStatus(statusCode).withBody(
-						"{\"results\":[{ \"series\": [ { \"name\": \"databases\", \"columns\": [ \"name\" ], \"values\": [ [ \"jmeter\" ], [ \"_internal\" ], [ \"telegraf\" ], [ \"pirates\" ] ] } ] } ] }")));
+				.withQueryParam("q", WireMock.equalToIgnoreCase(queryData))
+				.willReturn(aResponse().withStatus(statusCode).withBody(responseData)));
+	}
+
+	public void stubInfluxPostQueryAPI(int statusCode, String queryData, String responseData) {
+		this.wireMockServer.stubFor(post(WireMock.urlPathEqualTo("/query"))
+				.withQueryParam("u", WireMock.equalTo("default")).withQueryParam("p", WireMock.equalTo("default"))
+				.withQueryParam("q", WireMock.equalToIgnoreCase(queryData))
+				.willReturn(aResponse().withStatus(statusCode).withBody(responseData)));
 	}
 
 	public WireMockServer getWireMockServer() {

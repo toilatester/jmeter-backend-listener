@@ -215,7 +215,7 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 		} catch (Exception e) {
 			LOGGER.error(String.format("Error in set up test %s", e.getMessage()));
 			JMeterContextService.endTest();
-			throw e;
+			throw new ReportException(e.getMessage());
 		}
 	}
 

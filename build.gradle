@@ -98,7 +98,6 @@ task releasePlugin{
 }
 
 task releaseHotDebug{
-    dependsOn 'clean'
     dependsOn 'fatJar'
     dependsOn 'copyTaskToJmeterDebug'
     tasks.findByName('fatJar').mustRunAfter 'clean'

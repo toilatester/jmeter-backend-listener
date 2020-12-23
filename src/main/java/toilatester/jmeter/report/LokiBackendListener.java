@@ -37,6 +37,7 @@ import toilatester.jmeter.config.loki.dto.LokiLog;
 import toilatester.jmeter.config.loki.dto.LokiResponse;
 import toilatester.jmeter.config.loki.dto.LokiStream;
 import toilatester.jmeter.config.loki.dto.LokiStreams;
+import toilatester.jmeter.report.exception.ReportException;
 
 public class LokiBackendListener extends AbstractBackendListenerClient implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LokiBackendListener.class);
@@ -56,6 +57,8 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	private ScheduledFuture<?> addThreadMetricDataSchedulerSession;
 
 	private LinkedBlockingQueue<LokiLog> lokiResponseDataLogQueue = new LinkedBlockingQueue<LokiLog>();
+
+	private boolean forceToSendRemainsLog = false;
 
 	@SuppressWarnings("serial")
 	private Map<String, String> lokiReponseHeaderLabels = new HashMap<>() {
@@ -101,7 +104,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 				addThreadMetricDataSchedulerSession.cancel(true);
 			addThreadMetricDataScheduler.shutdown();
 			JMeterContextService.endTest();
-			throw e;
+			throw new ReportException(e.getMessage());
 		}
 	}
 
@@ -367,6 +370,23 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	}
 
 	private void addLogToBatchJob(List<List<String>> listLog) {
+		if (this.forceToSendRemainsLog) {
+			addLogItemWhenForceToFinishingTest(listLog);
+		} else {
+			addLogItemInScheduler(listLog);
+		}
+	}
+
+	private void addLogItemWhenForceToFinishingTest(List<List<String>> listLog) {
+		while (this.lokiResponseDataLogQueue.size() > 0) {
+			LokiLog lokiLog = this.lokiResponseDataLogQueue.poll();
+			if (lokiLog == null)
+				break;
+			listLog.add(lokiLog.getLogObject());
+		}
+	}
+
+	private void addLogItemInScheduler(List<List<String>> listLog) {
 		int currentBatchSize = 0;
 		while (currentBatchSize < this.lokiDBConfig.getLokibBatchSize()) {
 			LokiLog lokiLog = this.lokiResponseDataLogQueue.poll();
@@ -469,11 +489,12 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	}
 
 	private void forceToSendRemainsLog() {
-		LOGGER.info("Force to send all remain loki log");
+		LOGGER.warn("Force to send all remain loki log");
 		Map<String, String> labels = new HashMap<>();
 		labels.put("jmeter_data", "response-data");
 		labels.putAll(defaultLokiLabels);
 		List<List<String>> listLog = new ArrayList<>();
+		forceToSendRemainsLog = true;
 		addLogToBatchJob(listLog);
 		synchronized (LOCK) {
 			this.sendLog(listLog, labels);

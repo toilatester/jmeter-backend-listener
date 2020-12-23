@@ -9,8 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import org.apache.jmeter.assertions.AssertionResult;
-import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
@@ -26,6 +24,7 @@ import com.google.common.io.Resources;
 import toilatester.jmeter.BaseTest;
 import toilatester.jmeter.config.loki.dto.LokiStreams;
 import toilatester.jmeter.report.LokiBackendListener;
+import toilatester.jmeter.report.exception.ReportException;
 
 public class LokiJmeterReportListenerTest extends BaseTest {
 
@@ -63,7 +62,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 		JMeterUtils.getProperties(path.toString());
 		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
-		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+		Assertions.assertThrows(ReportException.class, () -> {
 			listener.setupTest(this.backendListenerContext(new HashMap<String, String>()));
 		});
 		Assertions.assertEquals(0, JMeterContextService.getTestStartTime());
@@ -160,7 +159,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.defaultLokiConfig()));
-		listener.handleSampleResults(this.generateSamplerResult(101),
+		listener.handleSampleResults(toilatester.jmeter.utils.JMeterUtils.generateSamplerResult(101),
 				this.backendListenerContext(this.defaultLokiConfig()));
 		waitToReceiveData.apply(WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")), 3);
 		List<LoggedRequest> request = this.lokiMockServer.getWireMockServer()
@@ -184,7 +183,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.defaultLokiConfig()));
-		listener.handleSampleResults(this.generateFailuerSamplerResult(101),
+		listener.handleSampleResults(toilatester.jmeter.utils.JMeterUtils.generateFailuerSamplerResult(101),
 				this.backendListenerContext(this.defaultLokiConfig()));
 		waitToReceiveData.apply(WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")), 3);
 		List<LoggedRequest> request = this.lokiMockServer.getWireMockServer()
@@ -208,7 +207,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.lokiConfigWithLogAllResponseData()));
-		listener.handleSampleResults(this.generateFailuerSamplerResult(101),
+		listener.handleSampleResults(toilatester.jmeter.utils.JMeterUtils.generateFailuerSamplerResult(101),
 				this.backendListenerContext(this.lokiConfigWithLogAllResponseData()));
 		waitToReceiveData.apply(WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")), 3);
 		List<LoggedRequest> request = this.lokiMockServer.getWireMockServer()
@@ -232,7 +231,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.defaultLokiConfig()));
-		listener.handleSampleResults(this.generateSamplerResult(101),
+		listener.handleSampleResults(toilatester.jmeter.utils.JMeterUtils.generateSamplerResult(101),
 				this.backendListenerContext(this.defaultLokiConfig()));
 		listener.teardownTest(this.backendListenerContext(this.defaultLokiConfig()));
 		waitToReceiveData.apply(WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")), 3);
@@ -276,7 +275,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 		listener.teardownTest(this.backendListenerContext(this.defaultLokiConfig()));
 	}
 
-	private BiFunction<RequestPatternBuilder, Integer, List<LoggedRequest>> waitToReceiveData = (pattern, retry) -> {
+	protected BiFunction<RequestPatternBuilder, Integer, List<LoggedRequest>> waitToReceiveData = (pattern, retry) -> {
 		while (retry > 0) {
 			FindRequestsResult result = this.lokiMockServer.getWireMockServer()
 					.findRequestsMatching(WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")).build());
@@ -291,31 +290,4 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 		}
 		return new ArrayList<>();
 	};
-
-	private List<SampleResult> generateSamplerResult(int totalSampler) {
-		List<SampleResult> samplerResults = new ArrayList<SampleResult>();
-		for (int i = 0; i < totalSampler; i++) {
-			SampleResult result = new SampleResult();
-			result.setThreadName("Thread-Group " + i);
-			result.setSuccessful(true);
-			samplerResults.add(result);
-		}
-		return samplerResults;
-	}
-
-	private List<SampleResult> generateFailuerSamplerResult(int totalSampler) {
-		List<SampleResult> samplerResults = new ArrayList<SampleResult>();
-		for (int i = 0; i < totalSampler; i++) {
-			SampleResult result = new SampleResult();
-			AssertionResult assertFailuer =  new AssertionResult("Stub Failuer Sampler");
-			assertFailuer.setFailure(true);
-			assertFailuer.setFailureMessage("Failuer Message Stub");
-			result.setThreadName("Thread-Group " + i);
-			result.setSuccessful(false);
-			result.addAssertionResult(assertFailuer);
-			samplerResults.add(result);
-		}
-		return samplerResults;
-	}
-
 }
