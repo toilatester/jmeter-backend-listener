@@ -51,6 +51,10 @@ test {
 
 jacocoTestReport {
     dependsOn test
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
 }
 
 //create a single Jar with all dependencies
