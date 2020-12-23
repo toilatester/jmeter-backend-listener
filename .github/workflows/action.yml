@@ -25,13 +25,7 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./jacocoTestReport.xml
-          directory: ./build/reports/jacoco/test/
-          flags: unittests
-          env_vars: OS,JAVA
-          name: codecov-umbrella
-          fail_ci_if_error: true
-          path_to_write_report: ./coverage/codecov_report.txt
+          file: ./build/reports/jacoco/test/jacocoTestReport.xml
           verbose: true
       - name: Build with Gradle
         run: ./gradlew clean build releasePlugin

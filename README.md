@@ -1,6 +1,7 @@
 
 
 # jmeter-backend-listener
+[![codecov](https://codecov.io/gh/toilatester/jmeter-backend-listener/branch/main/graph/badge.svg?token=N4L94BDE67)](https://codecov.io/gh/toilatester/jmeter-backend-listener)
 This is a plugin for JMeter that allows writing load test data on-the-fly to the InfluxDB database (time-series database) or the Grafana Loki database (multi-tenant log aggregation system). Below is the list of use cases for using this plugin:
 1. Send all sampler metrics to InfluxDB and use Grafana to visualize and analyze a performance test result
 2. Send all sampler response data to Loki and use that data to analyze a performance test result
