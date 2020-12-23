@@ -51,10 +51,16 @@ public class InfluxDBMockServer {
 	}
 
 	public void stubLokiPushLogAPI(String stubLog, int statusCode) {
-		this.wireMockServer.stubFor(post(WireMock.anyUrl())
-				.willReturn(aResponse().withStatus(statusCode).withBody(stubLog)));
-		this.wireMockServer.stubFor(get(WireMock.anyUrl())
-				.willReturn(aResponse().withStatus(statusCode).withBody(stubLog)));
+		this.wireMockServer
+				.stubFor(post(WireMock.anyUrl()).willReturn(aResponse().withStatus(statusCode).withBody(stubLog)));
+		this.wireMockServer
+				.stubFor(get(WireMock.urlPathEqualTo("/ping")).willReturn(aResponse().withStatus(204).withBody(
+						"{\"results\":[{ \"series\": [ { \"name\": \"databases\", \"columns\": [ \"name\" ], \"values\": [ [ \"jmeter\" ], [ \"_internal\" ], [ \"telegraf\" ], [ \"pirates\" ] ] } ] } ] }")));
+		this.wireMockServer.stubFor(get(WireMock.urlPathEqualTo("/query"))
+				.withQueryParam("u", WireMock.equalTo("default")).withQueryParam("p", WireMock.equalTo("default"))
+				.withQueryParam("q", WireMock.equalTo("SHOW DATABASES"))
+				.willReturn(aResponse().withStatus(statusCode).withBody(
+						"{\"results\":[{ \"series\": [ { \"name\": \"databases\", \"columns\": [ \"name\" ], \"values\": [ [ \"jmeter\" ], [ \"_internal\" ], [ \"telegraf\" ], [ \"pirates\" ] ] } ] } ] }")));
 	}
 
 	public WireMockServer getWireMockServer() {

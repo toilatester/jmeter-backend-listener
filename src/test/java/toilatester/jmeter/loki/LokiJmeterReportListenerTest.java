@@ -307,9 +307,12 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 		List<SampleResult> samplerResults = new ArrayList<SampleResult>();
 		for (int i = 0; i < totalSampler; i++) {
 			SampleResult result = new SampleResult();
+			AssertionResult assertFailuer =  new AssertionResult("Stub Failuer Sampler");
+			assertFailuer.setFailure(true);
+			assertFailuer.setFailureMessage("Failuer Message Stub");
 			result.setThreadName("Thread-Group " + i);
 			result.setSuccessful(false);
-			result.addAssertionResult(new AssertionResult("Stub Failuer Sampler"));
+			result.addAssertionResult(assertFailuer);
 			samplerResults.add(result);
 		}
 		return samplerResults;

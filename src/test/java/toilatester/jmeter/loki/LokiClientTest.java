@@ -92,6 +92,21 @@ public class LokiClientTest extends BaseTest {
 				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
 		client.stopLokiClient(1, 1);
 	}
+	
+	@Test
+	public void testLokiClientSendLogRetrySuccessWithStatus201() {
+		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 201);
+		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
+		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 3000, 3000);
+		client.sendAsyncWithRetry("Hello".getBytes(), 3).thenAccept((r) -> {
+			future.complete(r);
+		});
+		future.join();
+		this.lokiMockServer.getWireMockServer().verify(1,
+				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
+		client.stopLokiClient(1, 1);
+	}
 
 	@Test
 	public void testLokiClientSendLogWithMaxRetry() {
