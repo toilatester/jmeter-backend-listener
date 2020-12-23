@@ -17,6 +17,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import toilatester.jmeter.config.influxdb.InfluxDBConfig;
 import toilatester.jmeter.config.loki.LokiClientThreadFactory;
 import toilatester.jmeter.config.loki.LokiDBConfig;
 import toilatester.jmeter.utils.LokiMockServer;
@@ -33,7 +34,6 @@ public abstract class BaseTest {
 	public void beforeEach() {
 		this.lokiMockServer = new LokiMockServer();
 		this.lokiMockServer.startServer();
-		//this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
 		this.sendLogThreadPool = Executors.newFixedThreadPool(1, new LokiClientThreadFactory("jmeter-send-loki-log"));
 		this.httpClientThreadPool = new ThreadPoolExecutor(5, Integer.MAX_VALUE, 60000 * 10, TimeUnit.MILLISECONDS,
 				new SynchronousQueue<Runnable>(), new LokiClientThreadFactory("jmeter-loki-java-http"));
@@ -64,6 +64,18 @@ public abstract class BaseTest {
 
 	protected Map<String, String> defaultInfluxDBConfig() {
 		Map<String, String> config = new HashMap<String, String>();
+		config.put(InfluxDBConfig.KEY_TEST_NAME, "Test");
+		config.put(InfluxDBConfig.KEY_NODE_NAME, "Test-Node");
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_PROTOCOL, InfluxDBConfig.DEFAULT_PROTOCOL);
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_HOST, InfluxDBConfig.DEFAULT_HOST);
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_PORT, Integer.toString(InfluxDBConfig.DEFAULT_PORT));
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_USER, "");
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_PASSWORD, "");
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_DATABASE, InfluxDBConfig.DEFAULT_DATABASE);
+		config.put(InfluxDBConfig.KEY_RETENTION_POLICY, InfluxDBConfig.DEFAULT_RETENTION_POLICY);
+		config.put(InfluxDBConfig.KEY_SAMPLERS_LIST, ".*");
+		config.put(InfluxDBConfig.KEY_USE_REGEX_FOR_SAMPLER_LIST, "true");
+		config.put(InfluxDBConfig.KEY_RECORD_SUB_SAMPLES, "true");
 		return config;
 	}
 

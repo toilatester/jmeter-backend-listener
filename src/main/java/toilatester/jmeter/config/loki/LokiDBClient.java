@@ -110,7 +110,7 @@ public class LokiDBClient {
 					var request = requestBuilder.copy().POST(HttpRequest.BodyPublishers.ofByteArray(batch)).build();
 					var response = client.send(request, HttpResponse.BodyHandlers.ofString());
 					int statusCode = response.statusCode();
-					if (204 == statusCode || 200 == statusCode) {
+					if (204 >= statusCode && 200 <= statusCode) {
 						return new LokiResponse(response.statusCode(), response.body());
 					}
 					LOGGER.error(String.format("Error while sending batch to Loki %s. Trying to resend %d",

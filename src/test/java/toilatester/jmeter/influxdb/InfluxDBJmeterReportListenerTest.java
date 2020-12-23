@@ -24,9 +24,9 @@ public class InfluxDBJmeterReportListenerTest extends BaseTest {
 		JMeterUtils.getProperties(path.toString());
 		JMeterContextService.startTest();
 		InfluxBackendListener listener = new InfluxBackendListener();
-//		listener.setupTest(new BackendListenerContext(listener.getDefaultParameters()));
-//		Assertions.assertNotEquals(0, JMeterContextService.getTestStartTime());
-//		listener.teardownTest(this.backendListenerContext(this.defaultInfluxDBConfig()));
+		listener.setupTest(new BackendListenerContext(listener.getDefaultParameters()));
+		Assertions.assertNotEquals(0, JMeterContextService.getTestStartTime());
+		listener.teardownTest(this.backendListenerContext(this.defaultInfluxDBConfig()));
 	}
 
 }

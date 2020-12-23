@@ -35,6 +35,16 @@ public class InfluxDBConfig {
 	public static final String KEY_INFLUX_DB_PORT = "influxDBPort";
 
 	public static final String KEY_RETENTION_POLICY = "retentionPolicy";
+	
+	public static final String KEY_USE_REGEX_FOR_SAMPLER_LIST = "useRegexForSamplerList";
+
+	public static final String KEY_TEST_NAME = "testName";
+
+	public static final String KEY_NODE_NAME = "nodeName";
+
+	public static final String KEY_SAMPLERS_LIST = "samplersList";
+
+	public static final String KEY_RECORD_SUB_SAMPLES = "recordSubSamples";
 
 	private String influxDBProtocol;
 

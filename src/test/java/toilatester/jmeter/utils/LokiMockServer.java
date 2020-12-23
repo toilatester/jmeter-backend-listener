@@ -11,7 +11,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 
 public class LokiMockServer {
 	WireMockServer wireMockServer;
-	WireMockConfiguration lokiOptions = options().jettyHeaderBufferSize(16834).asynchronousResponseEnabled(false)
+	WireMockConfiguration lokiOptions = options().jettyHeaderBufferSize(16834).asynchronousResponseEnabled(true)
 			.asynchronousResponseThreads(100).jettyAcceptQueueSize(150000);
 
 	public LokiMockServer() {
