@@ -72,8 +72,6 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 
 	private ScheduledFuture<?> sendLogDataSchedulerSession;
 
-	private ScheduledFuture<?> sendLogDataSchedulerSession;
-
 	@Override
 	public void handleSampleResults(List<SampleResult> sampleResults, BackendListenerContext context) {
 		// Gather all the listeners And Save Data
