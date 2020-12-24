@@ -128,7 +128,7 @@ public class InfluxDBJmeterReportListenerTest extends BaseTest {
 		this.influxDBMockServer.getWireMockServer().verify(WireMock.moreThanOrExactly(4),
 				WireMock.postRequestedFor(WireMock.urlPathEqualTo("/write")));
 	}
-	
+
 	@Test
 	public void testSendFailedSamplerResult() throws Exception {
 		this.influxDBMockServer.stubInfluxPingAPI(204);
@@ -150,6 +150,33 @@ public class InfluxDBJmeterReportListenerTest extends BaseTest {
 						WireMock.equalToIgnoreCase("SHOW DATABASES")));
 		this.influxDBMockServer.getWireMockServer().verify(WireMock.moreThanOrExactly(4),
 				WireMock.postRequestedFor(WireMock.urlPathEqualTo("/write")));
+	}
+
+	@Test
+	public void testCanResendMetricToInfluxDb() throws Exception {
+		this.influxDBMockServer.stubInfluxPingAPI(204);
+		this.influxDBMockServer.stubInfluxGetQueryAPI(200, "SHOW DATABASES",
+				"{\"results\":[{\"statement_id\":0,\"series\":[{\"name\":\"databases\",\"columns\":[\"name\"],\"values\":[[\"_internal\"],[\"jmeter\"]]}]}]}");
+		this.influxDBMockServer.stubInfluxWriteDataToDatabaseAPI(204, "");
+		URL url = Resources.getResource("jmeter.properties");
+		Path path = Paths.get(url.toURI());
+		JMeterUtils.getProperties(path.toString());
+		JMeterContextService.startTest();
+		InfluxBackendListener listener = new InfluxBackendListener();
+		listener.setupTest(new BackendListenerContext(listener.getDefaultParameters()));
+		
+		listener.handleSampleResults(toilatester.jmeter.utils.JMeterUtils.generateFailuerSamplerResult(101),
+				this.backendListenerContext(this.defaultLokiConfig()));
+		this.influxDBMockServer.stopServer();
+		listener.handleSampleResults(toilatester.jmeter.utils.JMeterUtils.generateFailuerSamplerResult(101),
+				this.backendListenerContext(this.defaultLokiConfig()));
+//		listener.teardownTest(this.backendListenerContext(this.defaultInfluxDBConfig()));
+//		Assertions.assertNotEquals(0, JMeterContextService.getTestStartTime());
+//		this.influxDBMockServer.getWireMockServer().verify(WireMock.moreThanOrExactly(1),
+//				WireMock.getRequestedFor(WireMock.urlPathEqualTo("/query")).withQueryParam("q",
+//						WireMock.equalToIgnoreCase("SHOW DATABASES")));
+//		this.influxDBMockServer.getWireMockServer().verify(WireMock.moreThanOrExactly(4),
+//				WireMock.postRequestedFor(WireMock.urlPathEqualTo("/write")));
 	}
 
 }

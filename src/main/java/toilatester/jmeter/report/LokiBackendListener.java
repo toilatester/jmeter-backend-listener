@@ -58,7 +58,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 
 	private LinkedBlockingQueue<LokiLog> lokiResponseDataLogQueue = new LinkedBlockingQueue<LokiLog>();
 
-	private boolean forceToSendRemainsLog = false;
+//	private boolean forceToSendRemainsLog = false;
 
 	@SuppressWarnings("serial")
 	private Map<String, String> lokiReponseHeaderLabels = new HashMap<>() {
@@ -370,32 +370,42 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 	}
 
 	private void addLogToBatchJob(List<List<String>> listLog) {
-		if (this.forceToSendRemainsLog) {
-			addLogItemWhenForceToFinishingTest(listLog);
-		} else {
-			addLogItemInScheduler(listLog);
-		}
-	}
-
-	private void addLogItemWhenForceToFinishingTest(List<List<String>> listLog) {
-		while (this.lokiResponseDataLogQueue.size() > 0) {
-			LokiLog lokiLog = this.lokiResponseDataLogQueue.poll();
-			if (lokiLog == null)
-				break;
+//		if (this.forceToSendRemainsLog) {
+//			addLogItemWhenForceToFinishingTest(listLog);
+//		} else {
+//			addLogItemInScheduler(listLog);
+//		}
+		List<LokiLog> logs = new ArrayList<>(this.lokiResponseDataLogQueue.size());
+		this.lokiResponseDataLogQueue.drainTo(logs);
+		for (LokiLog lokiLog : logs) {
 			listLog.add(lokiLog.getLogObject());
 		}
 	}
 
-	private void addLogItemInScheduler(List<List<String>> listLog) {
-		int currentBatchSize = 0;
-		while (currentBatchSize < this.lokiDBConfig.getLokibBatchSize()) {
-			LokiLog lokiLog = this.lokiResponseDataLogQueue.poll();
-			currentBatchSize++;
-			if (lokiLog == null)
-				break;
-			listLog.add(lokiLog.getLogObject());
-		}
-	}
+//	private void addLogItemWhenForceToFinishingTest(List<List<String>> listLog) {
+//		List<LokiLog> logs = new ArrayList<>(this.lokiResponseDataLogQueue.size());
+//		this.lokiResponseDataLogQueue.drainTo(logs);
+//		for (LokiLog lokiLog : logs) {
+//			listLog.add(lokiLog.getLogObject());
+//		}
+////		while (this.lokiResponseDataLogQueue.size() > 0) {
+////			LokiLog lokiLog = this.lokiResponseDataLogQueue.poll();
+////			if (lokiLog == null)
+////				break;
+////			listLog.add(lokiLog.getLogObject());
+////		}
+//	}
+
+//	private void addLogItemInScheduler(List<List<String>> listLog) {
+//		int currentBatchSize = 0;
+//		while (currentBatchSize < this.lokiDBConfig.getLokibBatchSize()) {
+//			LokiLog lokiLog = this.lokiResponseDataLogQueue.poll();
+//			currentBatchSize++;
+//			if (lokiLog == null)
+//				break;
+//			listLog.add(lokiLog.getLogObject());
+//		}
+//	}
 
 	private void sendLog(List<List<String>> listLog, Map<String, String> labels) {
 		try {
@@ -494,7 +504,7 @@ public class LokiBackendListener extends AbstractBackendListenerClient implement
 		labels.put("jmeter_data", "response-data");
 		labels.putAll(defaultLokiLabels);
 		List<List<String>> listLog = new ArrayList<>();
-		forceToSendRemainsLog = true;
+//		forceToSendRemainsLog = true;
 		addLogToBatchJob(listLog);
 		synchronized (LOCK) {
 			this.sendLog(listLog, labels);

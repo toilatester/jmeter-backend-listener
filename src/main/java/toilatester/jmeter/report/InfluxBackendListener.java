@@ -161,10 +161,10 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	private void writeDataWithRetryInfluxDB(Point point) {
 		try {
 			influxDB.write(influxDBConfig.getInfluxDatabase(), influxDBConfig.getInfluxRetentionPolicy(), point);
-		} catch (RuntimeException e) {
+		} catch (Exception e) {
 			try {
 				influxDB.write(influxDBConfig.getInfluxDatabase(), influxDBConfig.getInfluxRetentionPolicy(), point);
-			} catch (RuntimeException retry) {
+			} catch (Exception retry) {
 				throw new ReportException("Has Error In Stored Sample To DB. ", retry);
 			}
 		}
