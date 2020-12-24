@@ -95,6 +95,40 @@ public abstract class BaseTest {
 		config.put(InfluxDBConfig.KEY_RECORD_SUB_SAMPLES, "true");
 		return config;
 	}
+	
+	protected Map<String, String> influxDBWithOutSendSubResultConfig() {
+		Map<String, String> config = new HashMap<String, String>();
+		config.put(InfluxDBConfig.KEY_TEST_NAME, "Test");
+		config.put(InfluxDBConfig.KEY_NODE_NAME, "Test-Node");
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_PROTOCOL, InfluxDBConfig.DEFAULT_PROTOCOL);
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_HOST, InfluxDBConfig.DEFAULT_HOST);
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_PORT, Integer.toString(InfluxDBConfig.DEFAULT_PORT));
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_USER, "");
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_PASSWORD, "");
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_DATABASE, InfluxDBConfig.DEFAULT_DATABASE);
+		config.put(InfluxDBConfig.KEY_RETENTION_POLICY, InfluxDBConfig.DEFAULT_RETENTION_POLICY);
+		config.put(InfluxDBConfig.KEY_SAMPLERS_LIST, ".*");
+		config.put(InfluxDBConfig.KEY_USE_REGEX_FOR_SAMPLER_LIST, "true");
+		config.put(InfluxDBConfig.KEY_RECORD_SUB_SAMPLES, "false");
+		return config;
+	}
+	
+	protected Map<String, String> influxDBWithOutEnableRegexConfig() {
+		Map<String, String> config = new HashMap<String, String>();
+		config.put(InfluxDBConfig.KEY_TEST_NAME, "Test");
+		config.put(InfluxDBConfig.KEY_NODE_NAME, "Test-Node");
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_PROTOCOL, InfluxDBConfig.DEFAULT_PROTOCOL);
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_HOST, InfluxDBConfig.DEFAULT_HOST);
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_PORT, Integer.toString(InfluxDBConfig.DEFAULT_PORT));
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_USER, "");
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_PASSWORD, "");
+		config.put(InfluxDBConfig.KEY_INFLUX_DB_DATABASE, InfluxDBConfig.DEFAULT_DATABASE);
+		config.put(InfluxDBConfig.KEY_RETENTION_POLICY, InfluxDBConfig.DEFAULT_RETENTION_POLICY);
+		config.put(InfluxDBConfig.KEY_SAMPLERS_LIST, "Request stublabel;Sub Request sub stub label");
+		config.put(InfluxDBConfig.KEY_USE_REGEX_FOR_SAMPLER_LIST, "false");
+		config.put(InfluxDBConfig.KEY_RECORD_SUB_SAMPLES, "false");
+		return config;
+	}
 
 	protected Map<String, String> lokiConfigWithTurnOffThreadMetrics() {
 		Map<String, String> config = new HashMap<String, String>();

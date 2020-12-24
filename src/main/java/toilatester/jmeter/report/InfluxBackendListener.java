@@ -270,7 +270,7 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	private void setupInfluxClient(BackendListenerContext context) {
 		influxDBConfig = new InfluxDBConfig(context);
 		OkHttpClient.Builder build = new OkHttpClient().newBuilder().readTimeout(60, TimeUnit.SECONDS)
-				.connectTimeout(60, TimeUnit.SECONDS).connectionPool(new ConnectionPool(20, 0, TimeUnit.SECONDS));
+				.connectTimeout(60, TimeUnit.SECONDS).connectionPool(new ConnectionPool(20, 30, TimeUnit.SECONDS));
 		createInfluxDBConnection(build);
 		influxDB.enableBatch(100, 5, TimeUnit.SECONDS);
 		createDatabaseIfNotExistent();
