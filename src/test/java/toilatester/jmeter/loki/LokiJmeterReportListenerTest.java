@@ -209,7 +209,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 			String lokiLabel = streams.getStreams().get(0).getStream().get("jmeter_data");
 			return lokiLabel != null && lokiLabel.contains("response-data");
 		});
-		this.lokiMockServer.getWireMockServer().verify(WireMock.moreThanOrExactly(15),
+		this.lokiMockServer.getWireMockServer().verify(WireMock.moreThanOrExactly(10),
 				WireMock.postRequestedFor(WireMock.urlPathEqualTo("/loki/api/v1/push")));
 		Assertions.assertEquals(true, recieveRequest);
 	}
