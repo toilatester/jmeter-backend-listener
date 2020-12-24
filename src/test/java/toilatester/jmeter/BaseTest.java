@@ -1,5 +1,9 @@
 package toilatester.jmeter;
 
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -8,6 +12,8 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.jmeter.threads.JMeterContextService;
+import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +22,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.Resources;
 
 import toilatester.jmeter.config.influxdb.InfluxDBConfig;
 import toilatester.jmeter.config.loki.LokiClientThreadFactory;
@@ -33,7 +40,7 @@ public abstract class BaseTest {
 	protected ExecutorService httpClientThreadPool;
 
 	@BeforeEach
-	public void beforeEach() {
+	public void beforeEach() throws URISyntaxException {
 		this.influxDBMockServer = new InfluxDBMockServer();
 		this.lokiMockServer = new LokiMockServer();
 		this.lokiMockServer.startServer();
@@ -41,6 +48,10 @@ public abstract class BaseTest {
 		this.sendLogThreadPool = Executors.newFixedThreadPool(1, new LokiClientThreadFactory("jmeter-send-loki-log"));
 		this.httpClientThreadPool = new ThreadPoolExecutor(5, Integer.MAX_VALUE, 60000 * 10, TimeUnit.MILLISECONDS,
 				new SynchronousQueue<Runnable>(), new LokiClientThreadFactory("jmeter-loki-java-http"));
+		URL url = Resources.getResource("jmeter.properties");
+		Path path = Paths.get(url.toURI());
+		JMeterUtils.getProperties(path.toString());
+		JMeterContextService.startTest();
 	}
 
 	@AfterEach
@@ -93,8 +104,7 @@ public abstract class BaseTest {
 		config.put(LokiDBConfig.KEY_LOKI_DB_API_ENDPOINT, LokiDBConfig.DEFAUlT_LOKI_API_ENDPOINT);
 		config.put(LokiDBConfig.KEY_LOKI_DB_BATCH_SIZE, Integer.toString(LokiDBConfig.DEFAULT_BATCH_SIZE));
 		config.put(LokiDBConfig.KEY_LOKI_EXTERNAL_LABELS, LokiDBConfig.DEFAUlT_LOKI_EXTERNAL_LABEL);
-		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME,
-				Long.toString(LokiDBConfig.DEFAULT_SEND_BATCH_INTERVAL_TIME));
+		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_BATCH_INTERVAL_TIME, Long.toString(1000));
 		config.put(LokiDBConfig.KEY_LOKI_DB_SEND_THREAD_METRICS_INTERVAL_TIME, Long.toString(30000));
 		config.put(LokiDBConfig.KEY_LOKI_LOG_ONLY_SAMPLER_RESPONSE_FAILED,
 				Boolean.toString(LokiDBConfig.DEFAULT_LOG_RESPONSE_BODY_FAILED_SAMPLER_ONLY));

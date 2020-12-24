@@ -73,6 +73,11 @@ task copyTask(type: Copy) {
     into './'
 }
 
+task copyCodeCoverage(type: Copy){
+ 	from 'build/reports/jacoco/test/.'
+    into './'
+}
+
 task copyTaskToJmeterDebug(type: Copy){
  	def jmeterPath = System.env.JMETER_HOME
  	def fileLibDebugPath = jmeterPath + "/lib/ext/" + "jmeter-backend-listener-plugin" + ".jar"

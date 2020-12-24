@@ -20,19 +20,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Run unit test
-        run: ./gradlew clean test
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./jacocoTestReport.xml
-          directory: ./build/reports/jacoco/test/
-          flags: unittests
-          env_vars: OS,JAVA
-          name: codecov-umbrella
-          fail_ci_if_error: true
-          path_to_write_report: ./coverage/codecov_report.txt
-          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          ./gradlew clean test
+          ./gradlew copyCodeCoverage
+          bash <(curl -s https://codecov.io/bash)
       - name: Build with Gradle
         run: ./gradlew clean build releasePlugin
       - name: Get release version

@@ -146,12 +146,12 @@ public class LokiClientTest extends BaseTest {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 400);
 		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
 		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
-		client.createLokiClient(this.getLokiHttpMockServerUrl(), 1, 1);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 3000, 3000);
 		client.sendAsyncWithRetry("Hello".getBytes(), 3).thenAccept((r) -> {
 			future.complete(r);
 		});
 		future.join();
-		this.lokiMockServer.getWireMockServer().verify(0,
+		this.lokiMockServer.getWireMockServer().verify(3,
 				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
 		Assertions.assertEquals(400, future.get().getStatus());
 		client.stopLokiClient(1, 1);
@@ -163,14 +163,14 @@ public class LokiClientTest extends BaseTest {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 302);
 		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
 		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
-		client.createLokiClient(this.getLokiHttpMockServerUrl(), 1, 1);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(), 3000, 3000);
 		client.sendAsyncWithRetry("Hello".getBytes(), 3).thenAccept((r) -> {
 			future.complete(r);
 		});
 		future.join();
-		this.lokiMockServer.getWireMockServer().verify(0,
+		this.lokiMockServer.getWireMockServer().verify(3,
 				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
-		Assertions.assertEquals(400, future.get().getStatus());
+		Assertions.assertEquals(302, future.get().getStatus());
 		client.stopLokiClient(1, 1);
 	}
 	
@@ -180,12 +180,12 @@ public class LokiClientTest extends BaseTest {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 101);
 		CompletableFuture<LokiResponse> future = new CompletableFuture<>();
 		LokiDBClient client = new LokiDBClient(this.sendLogThreadPool, this.httpClientThreadPool);
-		client.createLokiClient(this.getLokiHttpMockServerUrl(), 1, 1);
+		client.createLokiClient(this.getLokiHttpMockServerUrl(),3000, 3000);
 		client.sendAsyncWithRetry("Hello".getBytes(), 3).thenAccept((r) -> {
 			future.complete(r);
 		});
 		future.join();
-		this.lokiMockServer.getWireMockServer().verify(0,
+		this.lokiMockServer.getWireMockServer().verify(3,
 				WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")));
 		Assertions.assertEquals(400, future.get().getStatus());
 		client.stopLokiClient(1, 1);

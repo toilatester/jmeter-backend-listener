@@ -69,6 +69,8 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	private Random randomNumberGenerator;
 
 	private boolean recordSubSamples;
+	
+	private ScheduledFuture<?> sendLogDataSchedulerSession;
 
 	private ScheduledFuture<?> sendLogDataSchedulerSession;
 
