@@ -24,6 +24,7 @@ import org.influxdb.dto.Point.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import toilatester.jmeter.config.influxdb.InfluxDBConfig;
 import toilatester.jmeter.config.influxdb.measurement.ConnectMeasurement;
@@ -68,7 +69,7 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	private Random randomNumberGenerator;
 
 	private boolean recordSubSamples;
-	
+
 	private ScheduledFuture<?> sendLogDataSchedulerSession;
 
 	@Override
@@ -269,7 +270,7 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	private void setupInfluxClient(BackendListenerContext context) {
 		influxDBConfig = new InfluxDBConfig(context);
 		OkHttpClient.Builder build = new OkHttpClient().newBuilder().readTimeout(60, TimeUnit.SECONDS)
-				.connectTimeout(60, TimeUnit.SECONDS);
+				.connectTimeout(60, TimeUnit.SECONDS).connectionPool(new ConnectionPool(20, 0, TimeUnit.SECONDS));
 		createInfluxDBConnection(build);
 		influxDB.enableBatch(100, 5, TimeUnit.SECONDS);
 		createDatabaseIfNotExistent();
