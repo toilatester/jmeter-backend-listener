@@ -7,6 +7,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.jmeter.assertions.AssertionResult;
@@ -23,6 +24,7 @@ import org.influxdb.dto.Point.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import toilatester.jmeter.config.influxdb.InfluxDBConfig;
 import toilatester.jmeter.config.influxdb.measurement.ConnectMeasurement;
@@ -67,6 +69,8 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	private Random randomNumberGenerator;
 
 	private boolean recordSubSamples;
+
+	private ScheduledFuture<?> sendLogDataSchedulerSession;
 
 	@Override
 	public void handleSampleResults(List<SampleResult> sampleResults, BackendListenerContext context) {
@@ -161,10 +165,10 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	private void writeDataWithRetryInfluxDB(Point point) {
 		try {
 			influxDB.write(influxDBConfig.getInfluxDatabase(), influxDBConfig.getInfluxRetentionPolicy(), point);
-		} catch (RuntimeException e) {
+		} catch (Exception e) {
 			try {
 				influxDB.write(influxDBConfig.getInfluxDatabase(), influxDBConfig.getInfluxRetentionPolicy(), point);
-			} catch (RuntimeException retry) {
+			} catch (Exception retry) {
 				throw new ReportException("Has Error In Stored Sample To DB. ", retry);
 			}
 		}
@@ -207,7 +211,7 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 			parseSamplers(context);
 			scheduler = Executors.newScheduledThreadPool(1);
 
-			scheduler.scheduleAtFixedRate(this, 1, 1, TimeUnit.SECONDS);
+			sendLogDataSchedulerSession = scheduler.scheduleAtFixedRate(this, 1, 1, TimeUnit.SECONDS);
 
 			// Indicates whether to write sub sample records to the database
 			recordSubSamples = Boolean
@@ -222,6 +226,7 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	@Override
 	public void teardownTest(BackendListenerContext context) throws Exception {
 		LOGGER.info("Shutting down influxDB scheduler...");
+		sendLogDataSchedulerSession.cancel(true);
 		scheduler.shutdown();
 
 		addVirtualUsersMetrics(0, 0, 0, 0, JMeterContextService.getThreadCounts().finishedThreads);
@@ -234,7 +239,7 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 
 		influxDB.disableBatch();
 		try {
-			scheduler.awaitTermination(60, TimeUnit.SECONDS);
+			scheduler.awaitTermination(5, TimeUnit.SECONDS);
 			LOGGER.info("influxDB scheduler terminated!");
 		} catch (InterruptedException e) {
 			LOGGER.error("Error waiting for end of scheduler");
@@ -265,9 +270,9 @@ public class InfluxBackendListener extends AbstractBackendListenerClient impleme
 	private void setupInfluxClient(BackendListenerContext context) {
 		influxDBConfig = new InfluxDBConfig(context);
 		OkHttpClient.Builder build = new OkHttpClient().newBuilder().readTimeout(60, TimeUnit.SECONDS)
-				.connectTimeout(60, TimeUnit.SECONDS);
+				.connectTimeout(60, TimeUnit.SECONDS).connectionPool(new ConnectionPool(20, 0, TimeUnit.SECONDS));
 		createInfluxDBConnection(build);
-		influxDB.enableBatch(100, 15, TimeUnit.SECONDS);
+		influxDB.enableBatch(100, 5, TimeUnit.SECONDS);
 		createDatabaseIfNotExistent();
 	}
 
