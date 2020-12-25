@@ -1,16 +1,12 @@
 package toilatester.jmeter.loki;
 
 import java.lang.reflect.Method;
-import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.BiFunction;
 
 import org.apache.jmeter.threads.JMeterContextService;
-import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -19,7 +15,6 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import com.github.tomakehurst.wiremock.verification.FindRequestsResult;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import com.google.common.io.Resources;
 
 import toilatester.jmeter.BaseTest;
 import toilatester.jmeter.config.loki.dto.LokiStreams;
@@ -59,14 +54,11 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 	@Test
 	public void testCanSendLogJMeterWithValidConfigListener() throws Exception {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
-		URL url = Resources.getResource("jmeter.properties");
-		Path path = Paths.get(url.toURI());
-		JMeterUtils.getProperties(path.toString());
-		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.defaultLokiConfig()));
 		listener.run();
 		waitToReceiveData.apply(WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")), 3);
+
 		List<LoggedRequest> request = this.lokiMockServer.getWireMockServer()
 				.findRequestsMatching(WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")).build())
 				.getRequests();
@@ -76,6 +68,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 			return lokiLabel != null && lokiLabel.contains("thread-metrics");
 		}).findFirst().get().getBodyAsString();
 		LokiStreams streams = this.deserializeJSONToObject(jsonBodyRequest, LokiStreams.class);
+
 		this.lokiMockServer.getWireMockServer().verify(WireMock.moreThanOrExactly(1),
 				WireMock.postRequestedFor(WireMock.urlPathEqualTo("/loki/api/v1/push")));
 		Assertions.assertEquals("loki-log", streams.getStreams().get(0).getStream().get("jmeter_plugin"));
@@ -86,10 +79,6 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 	@Test
 	public void testCanSendLogJMeterWithValidConfigLogAllResponseDataListener() throws Exception {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
-		URL url = Resources.getResource("jmeter.properties");
-		Path path = Paths.get(url.toURI());
-		JMeterUtils.getProperties(path.toString());
-		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.lokiConfigWithLogAllResponseData()));
 		listener.run();
@@ -113,10 +102,6 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 	@Test
 	public void testCanSendLogJMeterWithExternalLabelsConfigListener() throws Exception {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
-		URL url = Resources.getResource("jmeter.properties");
-		Path path = Paths.get(url.toURI());
-		JMeterUtils.getProperties(path.toString());
-		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.lokiConfigWithExternalLabel()));
 		listener.run();
@@ -141,10 +126,6 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 	@Test
 	public void testSendLokiLogInHandlerSampler() throws Exception {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
-		URL url = Resources.getResource("jmeter.properties");
-		Path path = Paths.get(url.toURI());
-		JMeterUtils.getProperties(path.toString());
-		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.defaultLokiConfig()));
 		listener.handleSampleResults(toilatester.jmeter.utils.JMeterUtils.generateSamplerResult(101),
@@ -165,10 +146,6 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 	@Test
 	public void testSendLokiLogInHandlerSamplerWithSubResult() throws Exception {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
-		URL url = Resources.getResource("jmeter.properties");
-		Path path = Paths.get(url.toURI());
-		JMeterUtils.getProperties(path.toString());
-		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.defaultLokiConfig()));
 		listener.handleSampleResults(toilatester.jmeter.utils.JMeterUtils.generateSamplerResultWithSubResult(101),
@@ -189,17 +166,14 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 	@Test
 	public void testSendLokiLogInTearDownWithForceSendResult() throws Exception {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
-		URL url = Resources.getResource("jmeter.properties");
-		Path path = Paths.get(url.toURI());
-		JMeterUtils.getProperties(path.toString());
-		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
-		listener.setupTest(this.backendListenerContext(this.defaultLokiConfig()));
-		for (int samplerCount = 0; samplerCount < 1800; samplerCount++) {
+		listener.setupTest(this.backendListenerContext(this.lokiConfigWithTurnOffThreadMetrics()));
+		for (int samplerCount = 0; samplerCount < 3001; samplerCount++) {
 			listener.handleSampleResults(toilatester.jmeter.utils.JMeterUtils.generateSamplerResult(10),
-					this.backendListenerContext(this.defaultLokiConfig()));
+					this.backendListenerContext(this.lokiConfigWithTurnOffThreadMetrics()));
 		}
-		listener.teardownTest(this.backendListenerContext(this.defaultLokiConfig()));
+		Thread.sleep(3100);
+		listener.teardownTest(this.backendListenerContext(this.lokiConfigWithTurnOffThreadMetrics()));
 		waitToReceiveData.apply(WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")), 3);
 		List<LoggedRequest> request = this.lokiMockServer.getWireMockServer()
 				.findRequestsMatching(WireMock.postRequestedFor(WireMock.urlEqualTo("/loki/api/v1/push")).build())
@@ -209,7 +183,7 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 			String lokiLabel = streams.getStreams().get(0).getStream().get("jmeter_data");
 			return lokiLabel != null && lokiLabel.contains("response-data");
 		});
-		this.lokiMockServer.getWireMockServer().verify(WireMock.moreThanOrExactly(10),
+		this.lokiMockServer.getWireMockServer().verify(WireMock.moreThanOrExactly(300),
 				WireMock.postRequestedFor(WireMock.urlPathEqualTo("/loki/api/v1/push")));
 		Assertions.assertEquals(true, recieveRequest);
 	}
@@ -217,10 +191,6 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 	@Test
 	public void testSendLokiLogInHandlerSamplerWithFailuerSampler() throws Exception {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
-		URL url = Resources.getResource("jmeter.properties");
-		Path path = Paths.get(url.toURI());
-		JMeterUtils.getProperties(path.toString());
-		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.defaultLokiConfig()));
 		listener.handleSampleResults(toilatester.jmeter.utils.JMeterUtils.generateFailuerSamplerResult(101),
@@ -241,10 +211,6 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 	@Test
 	public void testSendLokiLogInHandlerSamplerWithFailuerSamplerAndLogAllResponseData() throws Exception {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
-		URL url = Resources.getResource("jmeter.properties");
-		Path path = Paths.get(url.toURI());
-		JMeterUtils.getProperties(path.toString());
-		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.lokiConfigWithLogAllResponseData()));
 		listener.handleSampleResults(toilatester.jmeter.utils.JMeterUtils.generateFailuerSamplerResult(101),
@@ -265,10 +231,6 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 	@Test
 	public void testSendLokiLogInTeardown() throws Exception {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
-		URL url = Resources.getResource("jmeter.properties");
-		Path path = Paths.get(url.toURI());
-		JMeterUtils.getProperties(path.toString());
-		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.defaultLokiConfig()));
 		listener.handleSampleResults(toilatester.jmeter.utils.JMeterUtils.generateSamplerResult(101),
@@ -289,10 +251,6 @@ public class LokiJmeterReportListenerTest extends BaseTest {
 	@Test
 	public void testSendLokiErrorLog() throws Exception {
 		this.lokiMockServer.stubLokiPushLogAPI("[INFO] Stub Log Data", 204);
-		URL url = Resources.getResource("jmeter.properties");
-		Path path = Paths.get(url.toURI());
-		JMeterUtils.getProperties(path.toString());
-		JMeterContextService.startTest();
 		LokiBackendListener listener = new LokiBackendListener();
 		listener.setupTest(this.backendListenerContext(this.defaultLokiConfig()));
 		for (Method m : listener.getClass().getDeclaredMethods()) {
