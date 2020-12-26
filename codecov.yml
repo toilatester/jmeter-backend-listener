@@ -8,8 +8,16 @@ coverage:
         # basic
         target: 85.0%
         threshold: 5%
+        branches: 
+          - main
+        if_ci_failed: error #success, failure, error, ignore
+        only_pulls: false
     patch:
       default:
         # basic
         target: 85.0%
         threshold: 5%
+        branches: 
+          - main
+        if_ci_failed: error #success, failure, error, ignore
+        only_pulls: false
