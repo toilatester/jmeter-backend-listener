@@ -87,3 +87,4 @@ To build the plugin and copy it to JMeter plugin for the
 ![i2](/docs/images/12.png)
 ![i3](/docs/images/13.png)
 ![i4](/docs/images/14.png)
+
